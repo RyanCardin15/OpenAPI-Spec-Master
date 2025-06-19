@@ -1,0 +1,28 @@
+{
+  "name": "openapi-explorer-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for OpenAPI specification analysis and exploration",
+  "main": "dist/mcp/server.js",
+  "scripts": {
+    "start": "node dist/mcp/server.js",
+    "build": "tsc src/mcp/server.ts --outDir dist/mcp --target es2022 --module node16 --moduleResolution node16"
+  },
+  "keywords": ["mcp", "openapi", "api", "documentation", "analysis"],
+  "author": "OpenAPI Explorer",
+  "license": "MIT",
+  "capabilities": {
+    "tools": [
+      "load_openapi_spec",
+      "get_api_overview", 
+      "search_endpoints",
+      "get_endpoint_details",
+      "generate_code_examples",
+      "get_api_analytics",
+      "validate_api_design",
+      "export_documentation"
+    ]
+  },
+  "requirements": {
+    "node": ">=18.0.0"
+  }
+}

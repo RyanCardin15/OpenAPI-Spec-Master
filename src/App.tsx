@@ -6,6 +6,7 @@ import { ViewControls } from './components/ViewControls';
 import { EndpointCard } from './components/EndpointCard';
 import { ExportModal } from './components/ExportModal';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { MCPInstructions } from './components/MCPInstructions';
 import { OpenAPIParser } from './utils/openapi-parser';
 import { ExportUtils } from './utils/export-utils';
 import { generateAnalytics } from './utils/analytics';
@@ -23,6 +24,7 @@ function App() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [isMCPOpen, setIsMCPOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
   // Theme management
@@ -287,6 +289,7 @@ function App() {
         onExportClick={() => setIsExportOpen(true)}
         onUploadClick={() => setShowUpload(true)}
         onAnalyticsClick={() => setIsAnalyticsOpen(true)}
+        onMCPClick={() => setIsMCPOpen(true)}
         searchValue={filters.search}
         onSearchChange={(search) => setFilters({ ...filters, search })}
         isDarkMode={isDarkMode}
@@ -513,6 +516,11 @@ function App() {
         analytics={analytics}
         isOpen={isAnalyticsOpen}
         onClose={() => setIsAnalyticsOpen(false)}
+      />
+
+      <MCPInstructions
+        isOpen={isMCPOpen}
+        onClose={() => setIsMCPOpen(false)}
       />
     </div>
   );

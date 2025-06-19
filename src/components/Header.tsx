@@ -7,11 +7,11 @@ import {
   Moon, 
   Sun, 
   Upload, 
-  Share, 
   Settings,
   Menu,
   X,
-  BarChart3
+  BarChart3,
+  Cpu
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -21,6 +21,7 @@ interface HeaderProps {
   onExportClick: () => void;
   onUploadClick: () => void;
   onAnalyticsClick: () => void;
+  onMCPClick: () => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
   isDarkMode: boolean;
@@ -35,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   onExportClick,
   onUploadClick,
   onAnalyticsClick,
+  onMCPClick,
   searchValue,
   onSearchChange,
   isDarkMode,
@@ -100,13 +102,16 @@ export const Header: React.FC<HeaderProps> = ({
                   <Download className="h-4 w-4" />
                   <span className="hidden sm:inline">Export</span>
                 </button>
-
-                <button className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                  <Share className="h-4 w-4" />
-                  <span className="hidden sm:inline">Share</span>
-                </button>
               </>
             )}
+
+            <button
+              onClick={onMCPClick}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-colors"
+            >
+              <Cpu className="h-4 w-4" />
+              <span className="hidden sm:inline">MCP</span>
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -193,18 +198,24 @@ export const Header: React.FC<HeaderProps> = ({
                     <Download className="h-5 w-5" />
                     Export
                   </button>
-
-                  <button className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                    <Share className="h-5 w-5" />
-                    Share
-                  </button>
-
-                  <button className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                    <Settings className="h-5 w-5" />
-                    Settings
-                  </button>
                 </>
               )}
+
+              <button
+                onClick={() => {
+                  onMCPClick();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-3 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors"
+              >
+                <Cpu className="h-5 w-5" />
+                MCP Integration
+              </button>
+
+              <button className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <Settings className="h-5 w-5" />
+                Settings
+              </button>
             </div>
           </div>
         )}
