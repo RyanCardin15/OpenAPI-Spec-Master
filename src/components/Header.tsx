@@ -4,8 +4,6 @@ import {
   Search, 
   Filter, 
   Download, 
-  Moon, 
-  Sun, 
   Upload, 
   Settings,
   Menu,
@@ -69,14 +67,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={onThemeToggle}
-              className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-
             <button
               onClick={onUploadClick}
               className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -153,17 +143,6 @@ export const Header: React.FC<HeaderProps> = ({
         {isMobileMenuOpen && (
           <div className="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex flex-col space-y-2">
-              <button
-                onClick={() => {
-                  onThemeToggle();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-              </button>
-
               <button
                 onClick={() => {
                   onUploadClick();
