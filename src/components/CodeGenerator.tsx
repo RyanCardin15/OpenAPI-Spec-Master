@@ -13,7 +13,10 @@ import {
   Filter,
   SortAsc,
   SortDesc,
-  ArrowUpDown
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  Tag
 } from 'lucide-react';
 import { EndpointData, OpenAPISpec } from '../types/openapi';
 
@@ -46,15 +49,20 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
   const [selectedLanguage, setSelectedLanguage] = useState<'curl' | 'javascript' | 'python' | 'typescript'>('curl');
   const [copiedText, setCopiedText] = useState<string | null>(null);
   
-  // TypeScript types filtering and sorting
+  // TypeScript types filtering and sorting with collapsible state
   const [typeSearch, setTypeSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [typeSortBy, setTypeSortBy] = useState<'name' | 'properties' | 'required'>('name');
   const [typeSortOrder, setTypeSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
   
-  // Endpoint filtering
+  // Mock data collapsible state
+  const [expandedMockSchemas, setExpandedMockSchemas] = useState<Set<string>>(new Set());
+  
+  // Endpoint filtering with tag support
   const [endpointSearch, setEndpointSearch] = useState('');
   const [methodFilter, setMethodFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -586,12 +594,26 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
       filtered = filtered.filter(ep => ep.method === methodFilter);
     }
 
+    if (tagFilter !== 'all') {
+      filtered = filtered.filter(ep => 
+        tagFilter === 'untagged' 
+          ? ep.tags.length === 0 
+          : ep.tags.includes(tagFilter)
+      );
+    }
+
     return filtered;
-  }, [endpoints, endpointSearch, methodFilter]);
+  }, [endpoints, endpointSearch, methodFilter, tagFilter]);
 
   const availableMethods = useMemo(() => {
     const methods = new Set(endpoints.map(ep => ep.method));
     return Array.from(methods).sort();
+  }, [endpoints]);
+
+  const availableTags = useMemo(() => {
+    const tags = new Set<string>();
+    endpoints.forEach(ep => ep.tags.forEach(tag => tags.add(tag)));
+    return Array.from(tags).sort();
   }, [endpoints]);
 
   const availableTypes = useMemo(() => {
@@ -629,6 +651,26 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
   const getTypeSortIcon = (field: 'name' | 'properties' | 'required') => {
     if (typeSortBy !== field) return <ArrowUpDown className="h-4 w-4" />;
     return typeSortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />;
+  };
+
+  const toggleTypeExpansion = (typeName: string) => {
+    const newExpanded = new Set(expandedTypes);
+    if (newExpanded.has(typeName)) {
+      newExpanded.delete(typeName);
+    } else {
+      newExpanded.add(typeName);
+    }
+    setExpandedTypes(newExpanded);
+  };
+
+  const toggleMockSchemaExpansion = (schemaName: string) => {
+    const newExpanded = new Set(expandedMockSchemas);
+    if (newExpanded.has(schemaName)) {
+      newExpanded.delete(schemaName);
+    } else {
+      newExpanded.add(schemaName);
+    }
+    setExpandedMockSchemas(newExpanded);
   };
 
   return (
@@ -701,16 +743,33 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                       />
                     </div>
-                    <select
-                      value={methodFilter}
-                      onChange={(e) => setMethodFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                    >
-                      <option value="all">All Methods</option>
-                      {availableMethods.map(method => (
-                        <option key={method} value={method}>{method}</option>
-                      ))}
-                    </select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={methodFilter}
+                        onChange={(e) => setMethodFilter(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      >
+                        <option value="all">All Methods</option>
+                        {availableMethods.map(method => (
+                          <option key={method} value={method}>{method}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={tagFilter}
+                        onChange={(e) => setTagFilter(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      >
+                        <option value="all">All Tags</option>
+                        <option value="untagged">Untagged</option>
+                        {availableTags.map(tag => (
+                          <option key={tag} value={tag}>{tag}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      <Filter className="h-3 w-3" />
+                      {filteredEndpoints.length} of {endpoints.length} endpoints
+                    </div>
                   </div>
                 </div>
                 
@@ -746,6 +805,19 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
                           {endpoint.summary && (
                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
                               {endpoint.summary}
+                            </div>
+                          )}
+                          {endpoint.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {endpoint.tags.slice(0, 2).map(tag => (
+                                <span key={tag} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded">
+                                  <Tag className="h-2.5 w-2.5" />
+                                  {tag}
+                                </span>
+                              ))}
+                              {endpoint.tags.length > 2 && (
+                                <span className="text-xs text-gray-500">+{endpoint.tags.length - 2}</span>
+                              )}
                             </div>
                           )}
                         </button>
@@ -796,6 +868,16 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
                         <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
                           {selectedEndpointData.summary}
                         </p>
+                      )}
+                      {selectedEndpointData.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {selectedEndpointData.tags.map(tag => (
+                            <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                              <Tag className="h-3 w-3" />
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       )}
                     </div>
                     
@@ -877,105 +959,99 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
                 </div>
               </div>
 
-              {/* Types Table */}
-              <div className="flex-1 overflow-y-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-900 dark:text-white">
+              {/* Types List - Collapsible */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-3">
+                  {filteredAndSortedTypes.map((type, index) => {
+                    const isExpanded = expandedTypes.has(type.name);
+                    const schema = spec.components?.schemas?.[type.name];
+                    
+                    return (
+                      <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                         <button
-                          onClick={() => toggleTypeSort('name')}
-                          className="flex items-center gap-2 hover:text-blue-600 transition-colors"
+                          onClick={() => toggleTypeExpansion(type.name)}
+                          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
-                          Type Name
-                          {getTypeSortIcon('name')}
-                        </button>
-                      </th>
-                      <th className="text-left p-4 font-medium text-gray-900 dark:text-white">
-                        <button
-                          onClick={() => toggleTypeSort('properties')}
-                          className="flex items-center gap-2 hover:text-blue-600 transition-colors"
-                        >
-                          Properties
-                          {getTypeSortIcon('properties')}
-                        </button>
-                      </th>
-                      <th className="text-left p-4 font-medium text-gray-900 dark:text-white">
-                        <button
-                          onClick={() => toggleTypeSort('required')}
-                          className="flex items-center gap-2 hover:text-blue-600 transition-colors"
-                        >
-                          Required
-                          {getTypeSortIcon('required')}
-                        </button>
-                      </th>
-                      <th className="text-left p-4 font-medium text-gray-900 dark:text-white">Description</th>
-                      <th className="text-left p-4 font-medium text-gray-900 dark:text-white">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {filteredAndSortedTypes.map((type, index) => (
-                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <Type className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                          <div className="flex items-center gap-3">
+                            {isExpanded ? (
+                              <ChevronDown className="h-5 w-5 text-gray-500" />
+                            ) : (
+                              <ChevronRight className="h-5 w-5 text-gray-500" />
+                            )}
+                            <Type className="h-5 w-5 text-blue-600" />
                             <span className="font-mono font-medium text-gray-900 dark:text-white">{type.name}</span>
                           </div>
-                        </td>
-                        <td className="p-4">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs rounded font-medium">
-                            {type.properties}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs rounded font-medium">
-                            {type.required}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-gray-600 dark:text-gray-400 text-sm">
-                            {type.description || 'No description'}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <button
-                            onClick={() => {
-                              const schema = spec.components?.schemas?.[type.name];
-                              if (schema) {
-                                const typeCode = `export interface ${type.name} {\n${
+                          <div className="flex items-center gap-3">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs rounded font-medium">
+                              {type.properties} props
+                            </span>
+                            <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs rounded font-medium">
+                              {type.required} required
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (schema) {
+                                  const typeCode = `export interface ${type.name} {\n${
+                                    schema.properties ? Object.entries(schema.properties).map(([propName, propSchema]: [string, any]) => {
+                                      const isRequired = schema.required?.includes(propName);
+                                      const propType = getTypeScriptType(propSchema);
+                                      return `  ${propName}${isRequired ? '' : '?'}: ${propType};`;
+                                    }).join('\n') : ''
+                                  }\n}`;
+                                  copyToClipboard(typeCode, `type-${type.name}`);
+                                }
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded transition-colors text-sm"
+                            >
+                              {copiedText === `type-${type.name}` ? (
+                                <CheckCircle className="h-3 w-3" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                              Copy
+                            </button>
+                          </div>
+                        </button>
+                        
+                        {isExpanded && schema && (
+                          <div className="px-4 pb-4 bg-gray-50 dark:bg-gray-700/50">
+                            {type.description && (
+                              <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">
+                                {type.description}
+                              </p>
+                            )}
+                            <div className="bg-gray-900 rounded-lg p-4">
+                              <pre className="text-green-400 text-sm overflow-x-auto">
+                                <code>{`export interface ${type.name} {\n${
                                   schema.properties ? Object.entries(schema.properties).map(([propName, propSchema]: [string, any]) => {
                                     const isRequired = schema.required?.includes(propName);
                                     const propType = getTypeScriptType(propSchema);
-                                    return `  ${propName}${isRequired ? '' : '?'}: ${propType};`;
+                                    let line = `  ${propName}${isRequired ? '' : '?'}: ${propType};`;
+                                    if (propSchema.description) {
+                                      line = `  /** ${propSchema.description} */\n  ${propName}${isRequired ? '' : '?'}: ${propType};`;
+                                    }
+                                    return line;
                                   }).join('\n') : ''
-                                }\n}`;
-                                copyToClipboard(typeCode, `type-${type.name}`);
-                              }
-                            }}
-                            className="flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded transition-colors text-sm"
-                          >
-                            {copiedText === `type-${type.name}` ? (
-                              <CheckCircle className="h-3 w-3" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                            Copy
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                
-                {filteredAndSortedTypes.length === 0 && (
-                  <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-                    <div className="text-center">
-                      <Type className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No types found</p>
-                      <p className="text-sm">Try adjusting your search or filters</p>
+                                }\n}`}</code>
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                  {filteredAndSortedTypes.length === 0 && (
+                    <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+                      <div className="text-center">
+                        <Type className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No types found</p>
+                        <p className="text-sm">Try adjusting your search or filters</p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -997,16 +1073,75 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
                     ) : (
                       <Copy className="h-4 w-4" />
                     )}
-                    Copy Mock Data
+                    Copy All Mock Data
                   </button>
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="bg-gray-900 rounded-lg p-4">
-                  <pre className="text-green-400 text-sm overflow-x-auto">
-                    <code>{generateMockDataFile()}</code>
-                  </pre>
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="space-y-3">
+                  {Object.keys(spec.components?.schemas || {}).map(schemaName => {
+                    const isExpanded = expandedMockSchemas.has(schemaName);
+                    const mockData = generateSchemaExample(spec.components?.schemas?.[schemaName]);
+                    
+                    return (
+                      <div key={schemaName} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => toggleMockSchemaExpansion(schemaName)}
+                          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            {isExpanded ? (
+                              <ChevronDown className="h-5 w-5 text-gray-500" />
+                            ) : (
+                              <ChevronRight className="h-5 w-5 text-gray-500" />
+                            )}
+                            <Shuffle className="h-5 w-5 text-green-600" />
+                            <span className="font-mono font-medium text-gray-900 dark:text-white">{schemaName}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs rounded font-medium">
+                              Mock Data
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(JSON.stringify(mockData, null, 2), `mock-${schemaName}`);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900 rounded transition-colors text-sm"
+                            >
+                              {copiedText === `mock-${schemaName}` ? (
+                                <CheckCircle className="h-3 w-3" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                              Copy
+                            </button>
+                          </div>
+                        </button>
+                        
+                        {isExpanded && (
+                          <div className="px-4 pb-4 bg-gray-50 dark:bg-gray-700/50">
+                            <div className="bg-gray-900 rounded-lg p-4">
+                              <pre className="text-green-400 text-sm overflow-x-auto">
+                                <code>{JSON.stringify(mockData, null, 2)}</code>
+                              </pre>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                  {Object.keys(spec.components?.schemas || {}).length === 0 && (
+                    <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+                      <div className="text-center">
+                        <Shuffle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No schemas found</p>
+                        <p className="text-sm">No schemas available for mock data generation</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
