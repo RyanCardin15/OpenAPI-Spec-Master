@@ -17,7 +17,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/openapi-spec-master.git"
+    "url": "git+https://github.com/RyanCardin15/openapi-spec-master.git"
   },
   "bin": {
     "openapi-spec-master": "dist/cli.js",
