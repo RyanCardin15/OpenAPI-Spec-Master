@@ -18,7 +18,9 @@ import {
   SortAsc,
   SortDesc,
   X,
-  ArrowUpDown
+  ArrowUpDown,
+  Network,
+  List
 } from 'lucide-react';
 import { OpenAPISpec } from '../types/openapi';
 
@@ -37,12 +39,24 @@ interface PropertyResult {
   description?: string;
 }
 
+interface DependencyNode {
+  name: string;
+  dependencies: string[];
+  level: number;
+  expanded: boolean;
+}
+
 export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'schemas' | 'dependencies' | 'properties' | 'mock'>('schemas');
   const [selectedSchema, setSelectedSchema] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSchemas, setExpandedSchemas] = useState<Set<string>>(new Set());
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  
+  // Dependencies tab state
+  const [dependencyView, setDependencyView] = useState<'list' | 'tree'>('list');
+  const [expandedDependencies, setExpandedDependencies] = useState<Set<string>>(new Set());
+  const [nestedExpanded, setNestedExpanded] = useState<Set<string>>(new Set());
   
   // Advanced filtering and sorting for properties
   const [propertySearch, setPropertySearch] = useState('');
@@ -51,91 +65,9 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
   const [sortBy, setSortBy] = useState<'property' | 'type' | 'schema'>('property');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  if (!isOpen || !spec) return null;
-
-  const schemas = spec.components?.schemas || {};
+  // Move all derived values and useMemo hooks before the early return
+  const schemas = spec?.components?.schemas || {};
   const schemaNames = Object.keys(schemas);
-
-  const copyToClipboard = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedText(label);
-      setTimeout(() => setCopiedText(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  };
-
-  const toggleSchema = (schemaName: string) => {
-    const newExpanded = new Set(expandedSchemas);
-    if (newExpanded.has(schemaName)) {
-      newExpanded.delete(schemaName);
-    } else {
-      newExpanded.add(schemaName);
-    }
-    setExpandedSchemas(newExpanded);
-  };
-
-  const generateMockData = (schema: any): any => {
-    if (!schema || typeof schema !== 'object') return null;
-
-    if (schema.$ref) {
-      const refName = schema.$ref.replace('#/components/schemas/', '');
-      return generateMockData(schemas[refName]);
-    }
-
-    switch (schema.type) {
-      case 'object':
-        const obj: any = {};
-        if (schema.properties) {
-          Object.entries(schema.properties).forEach(([key, prop]: [string, any]) => {
-            obj[key] = generateMockData(prop);
-          });
-        }
-        return obj;
-      case 'array':
-        return schema.items ? [generateMockData(schema.items)] : [];
-      case 'string':
-        if (schema.format === 'email') return 'user@example.com';
-        if (schema.format === 'date') return '2024-01-01';
-        if (schema.format === 'date-time') return '2024-01-01T00:00:00Z';
-        if (schema.format === 'uuid') return '123e4567-e89b-12d3-a456-426614174000';
-        if (schema.enum) return schema.enum[0];
-        return schema.example || 'sample string';
-      case 'number':
-      case 'integer':
-        return schema.example || Math.floor(Math.random() * 100);
-      case 'boolean':
-        return schema.example !== undefined ? schema.example : Math.random() > 0.5;
-      default:
-        return schema.example || null;
-    }
-  };
-
-  const findSchemaDependencies = (schemaName: string): string[] => {
-    const dependencies = new Set<string>();
-    const schema = schemas[schemaName];
-    
-    const findRefs = (obj: any) => {
-      if (!obj || typeof obj !== 'object') return;
-      
-      if (obj.$ref && typeof obj.$ref === 'string') {
-        const refName = obj.$ref.replace('#/components/schemas/', '');
-        if (refName !== schemaName && schemas[refName]) {
-          dependencies.add(refName);
-        }
-      }
-      
-      Object.values(obj).forEach(value => {
-        if (typeof value === 'object') {
-          findRefs(value);
-        }
-      });
-    };
-    
-    findRefs(schema);
-    return Array.from(dependencies);
-  };
 
   const searchProperties = useMemo((): PropertyResult[] => {
     const results: PropertyResult[] = [];
@@ -224,6 +156,257 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     const types = new Set(searchProperties.map(prop => prop.type));
     return Array.from(types).sort();
   }, [searchProperties]);
+
+  // Enhanced dependency analysis
+  const findSchemaDependencies = useMemo(() => {
+    const dependencyMap = new Map<string, string[]>();
+    
+    const findRefs = (obj: any, visited = new Set<string>()): string[] => {
+      if (!obj || typeof obj !== 'object') return [];
+      
+      const refs: string[] = [];
+      
+      if (obj.$ref && typeof obj.$ref === 'string') {
+        const refName = obj.$ref.replace('#/components/schemas/', '');
+        if (schemas[refName] && !visited.has(refName)) {
+          refs.push(refName);
+        }
+        return refs;
+      }
+      
+      Object.values(obj).forEach(value => {
+        if (typeof value === 'object') {
+          refs.push(...findRefs(value, visited));
+        }
+      });
+      
+      return [...new Set(refs)];
+    };
+    
+    // Build dependency map
+    Object.entries(schemas).forEach(([schemaName, schema]) => {
+      const deps = findRefs(schema);
+      dependencyMap.set(schemaName, deps);
+    });
+    
+    return dependencyMap;
+  }, [schemas]);
+
+  const buildDependencyTree = useMemo(() => {
+    const tree: { [key: string]: DependencyNode } = {};
+    
+    // Initialize all nodes
+    schemaNames.forEach(name => {
+      tree[name] = {
+        name,
+        dependencies: findSchemaDependencies.get(name) || [],
+        level: 0,
+        expanded: expandedDependencies.has(name)
+      };
+    });
+    
+    return tree;
+  }, [schemaNames, findSchemaDependencies, expandedDependencies]);
+
+  // Now the early return after all hooks
+  if (!isOpen || !spec) return null;
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedText(label);
+      setTimeout(() => setCopiedText(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
+  const toggleSchema = (schemaName: string) => {
+    const newExpanded = new Set(expandedSchemas);
+    if (newExpanded.has(schemaName)) {
+      newExpanded.delete(schemaName);
+    } else {
+      newExpanded.add(schemaName);
+    }
+    setExpandedSchemas(newExpanded);
+  };
+
+  const toggleDependency = (schemaName: string) => {
+    const newExpanded = new Set(expandedDependencies);
+    if (newExpanded.has(schemaName)) {
+      newExpanded.delete(schemaName);
+    } else {
+      newExpanded.add(schemaName);
+    }
+    setExpandedDependencies(newExpanded);
+  };
+
+  const toggleNestedDependency = (path: string) => {
+    const newExpanded = new Set(nestedExpanded);
+    if (newExpanded.has(path)) {
+      newExpanded.delete(path);
+    } else {
+      newExpanded.add(path);
+    }
+    setNestedExpanded(newExpanded);
+  };
+
+  const generateMockData = (schema: any): any => {
+    if (!schema || typeof schema !== 'object') return null;
+
+    if (schema.$ref) {
+      const refName = schema.$ref.replace('#/components/schemas/', '');
+      return generateMockData(schemas[refName]);
+    }
+
+    switch (schema.type) {
+      case 'object':
+        const obj: any = {};
+        if (schema.properties) {
+          Object.entries(schema.properties).forEach(([key, prop]: [string, any]) => {
+            obj[key] = generateMockData(prop);
+          });
+        }
+        return obj;
+      case 'array':
+        return schema.items ? [generateMockData(schema.items)] : [];
+      case 'string':
+        if (schema.format === 'email') return 'user@example.com';
+        if (schema.format === 'date') return '2024-01-01';
+        if (schema.format === 'date-time') return '2024-01-01T00:00:00Z';
+        if (schema.format === 'uuid') return '123e4567-e89b-12d3-a456-426614174000';
+        if (schema.enum) return schema.enum[0];
+        return schema.example || 'sample string';
+      case 'number':
+      case 'integer':
+        return schema.example || Math.floor(Math.random() * 100);
+      case 'boolean':
+        return schema.example !== undefined ? schema.example : Math.random() > 0.5;
+      default:
+        return schema.example || null;
+    }
+  };
+
+  const renderNestedDependencies = (schemaName: string, dependencies: string[], level = 0, visited = new Set<string>()): React.ReactNode => {
+    if (visited.has(schemaName) || level > 3) {
+      return (
+        <div className={`ml-${(level + 1) * 4} text-gray-500 dark:text-gray-400 text-sm italic`}>
+          {visited.has(schemaName) ? 'Circular reference detected' : 'Max depth reached'}
+        </div>
+      );
+    }
+
+    visited.add(schemaName);
+
+    return dependencies.map(dep => {
+      const depDependencies = findSchemaDependencies.get(dep) || [];
+      const hasNestedDeps = depDependencies.length > 0;
+      const nestedPath = `${schemaName}-${dep}-${level}`;
+      const isNestedExpanded = nestedExpanded.has(nestedPath);
+
+      return (
+        <div key={nestedPath} className={`ml-${(level + 1) * 4} border-l border-gray-200 dark:border-gray-600 pl-3`}>
+          <div className="flex items-center gap-2 py-1">
+            {hasNestedDeps && (
+              <button
+                onClick={() => toggleNestedDependency(nestedPath)}
+                className="p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                {isNestedExpanded ? (
+                  <ChevronDown className="h-3 w-3 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-3 w-3 text-gray-500" />
+                )}
+              </button>
+            )}
+            <Hash className="h-3 w-3 text-blue-500 flex-shrink-0" />
+            <span className="text-sm text-gray-700 dark:text-gray-300 font-mono">{dep}</span>
+            {hasNestedDeps && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                ({depDependencies.length} deps)
+              </span>
+            )}
+          </div>
+          
+          {isNestedExpanded && hasNestedDeps && (
+            <div className="mt-1">
+              {renderNestedDependencies(dep, depDependencies, level + 1, new Set(visited))}
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
+  const renderDependencyTree = () => {
+    const rootSchemas = schemaNames.filter(name => {
+      // Find schemas that are not dependencies of others (potential roots)
+      const isReferenced = Array.from(findSchemaDependencies.values()).some(deps => deps.includes(name));
+      return !isReferenced || findSchemaDependencies.get(name)?.length === 0;
+    });
+
+    const renderTreeNode = (schemaName: string, level = 0, visited = new Set<string>()): React.ReactNode => {
+      if (visited.has(schemaName) || level > 4) return null;
+      
+      visited.add(schemaName);
+      const dependencies = findSchemaDependencies.get(schemaName) || [];
+      const hasChildren = dependencies.length > 0;
+      const isExpanded = expandedDependencies.has(schemaName);
+
+      return (
+        <div key={`${schemaName}-${level}`} className="relative">
+          <div className={`flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded ${level > 0 ? 'ml-6' : ''}`}>
+            {hasChildren && (
+              <button
+                onClick={() => toggleDependency(schemaName)}
+                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-gray-500" />
+                )}
+              </button>
+            )}
+            
+            <div className={`w-3 h-3 rounded-full ${
+              level === 0 ? 'bg-blue-500' :
+              level === 1 ? 'bg-green-500' :
+              level === 2 ? 'bg-yellow-500' :
+              'bg-purple-500'
+            }`} />
+            
+            <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
+              {schemaName}
+            </span>
+            
+            {hasChildren && (
+              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                {dependencies.length} deps
+              </span>
+            )}
+          </div>
+          
+          {isExpanded && hasChildren && (
+            <div className="ml-4 border-l-2 border-gray-200 dark:border-gray-600 pl-2">
+              {dependencies.map(dep => renderTreeNode(dep, level + 1, new Set(visited)))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-2">
+        {rootSchemas.length > 0 ? (
+          rootSchemas.map(schema => renderTreeNode(schema))
+        ) : (
+          // If no clear roots, show all schemas
+          schemaNames.slice(0, 10).map(schema => renderTreeNode(schema))
+        )}
+      </div>
+    );
+  };
 
   const tabs = [
     { id: 'schemas', label: 'Schemas', icon: Database },
@@ -389,57 +572,133 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
             </div>
           )}
 
-          {/* Dependencies Tab */}
+          {/* Enhanced Dependencies Tab */}
           {activeTab === 'dependencies' && (
-            <div className="h-full overflow-y-auto p-6">
-              <div className="space-y-4">
-                {schemaNames.map(schemaName => {
-                  const dependencies = findSchemaDependencies(schemaName);
-                  const isExpanded = expandedSchemas.has(schemaName);
-                  
-                  return (
-                    <div key={schemaName} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                      <button
-                        onClick={() => toggleSchema(schemaName)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          {isExpanded ? (
-                            <ChevronDown className="h-5 w-5 text-gray-500" />
-                          ) : (
-                            <ChevronRight className="h-5 w-5 text-gray-500" />
-                          )}
-                          <GitBranch className="h-5 w-5 text-blue-600" />
-                          <span className="font-medium text-gray-900 dark:text-white">{schemaName}</span>
-                        </div>
-                        <span className={`px-3 py-1 text-sm rounded-full font-medium ${
-                          dependencies.length > 0 
-                            ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                        }`}>
-                          {dependencies.length} dependencies
-                        </span>
-                      </button>
+            <div className="h-full flex flex-col">
+              {/* View Toggle */}
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Schema Dependencies
+                  </h3>
+                  <div className="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+                    <button
+                      onClick={() => setDependencyView('list')}
+                      className={`
+                        flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all
+                        ${dependencyView === 'list'
+                          ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' 
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                        }
+                      `}
+                    >
+                      <List className="h-4 w-4" />
+                      List View
+                    </button>
+                    <button
+                      onClick={() => setDependencyView('tree')}
+                      className={`
+                        flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all
+                        ${dependencyView === 'tree'
+                          ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' 
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                        }
+                      `}
+                    >
+                      <Network className="h-4 w-4" />
+                      Tree View
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                {dependencyView === 'list' ? (
+                  // Enhanced List View with Nested Dependencies
+                  <div className="space-y-4">
+                    {schemaNames.map(schemaName => {
+                      const dependencies = findSchemaDependencies.get(schemaName) || [];
+                      const isExpanded = expandedDependencies.has(schemaName);
                       
-                      {isExpanded && (
-                        <div className="px-4 pb-4 bg-gray-50 dark:bg-gray-700/50">
-                          {dependencies.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                              {dependencies.map(dep => (
-                                <div key={dep} className="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-600">
-                                  <Hash className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                                  <span className="text-gray-700 dark:text-gray-300 truncate">{dep}</span>
-                                </div>
-                              ))}
+                      return (
+                        <div key={schemaName} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => toggleDependency(schemaName)}
+                            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              {isExpanded ? (
+                                <ChevronDown className="h-5 w-5 text-gray-500" />
+                              ) : (
+                                <ChevronRight className="h-5 w-5 text-gray-500" />
+                              )}
+                              <GitBranch className="h-5 w-5 text-blue-600" />
+                              <span className="font-medium text-gray-900 dark:text-white">{schemaName}</span>
                             </div>
-                          ) : (
-                            <p className="text-gray-500 dark:text-gray-400 text-sm italic">No dependencies found</p>
+                            <span className={`px-3 py-1 text-sm rounded-full font-medium ${
+                              dependencies.length > 0 
+                                ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            }`}>
+                              {dependencies.length} dependencies
+                            </span>
+                          </button>
+                          
+                          {isExpanded && (
+                            <div className="px-4 pb-4 bg-gray-50 dark:bg-gray-700/50">
+                              {dependencies.length > 0 ? (
+                                <div className="space-y-2">
+                                  {renderNestedDependencies(schemaName, dependencies)}
+                                </div>
+                              ) : (
+                                <p className="text-gray-500 dark:text-gray-400 text-sm italic">No dependencies found</p>
+                              )}
+                            </div>
                           )}
                         </div>
-                      )}
+                      );
+                    })}
+                  </div>
+                ) : (
+                  // Visual Tree View
+                  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <div className="mb-4">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        Dependency Tree Visualization
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Click on schema nodes to expand their dependencies. Colors indicate depth levels.
+                      </p>
                     </div>
-                  );
-                })}
+                    
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-96 overflow-y-auto">
+                      {renderDependencyTree()}
+                    </div>
+                    
+                    {/* Legend */}
+                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Legend:</h5>
+                      <div className="flex flex-wrap gap-4 text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                          <span className="text-gray-600 dark:text-gray-400">Root Schemas</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-gray-600 dark:text-gray-400">Level 1 Dependencies</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                          <span className="text-gray-600 dark:text-gray-400">Level 2 Dependencies</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                          <span className="text-gray-600 dark:text-gray-400">Level 3+ Dependencies</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
