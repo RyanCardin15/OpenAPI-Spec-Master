@@ -275,7 +275,7 @@ node dist/mcp/server.js`;
                 <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
                   <li>• "Load this OpenAPI spec and give me an overview: [paste spec]"</li>
                   <li>• "Search for all POST endpoints in the user management section"</li>
-                  <li>• "Generate a Python example for the GET /users/&#123;id&#125; endpoint"</li>
+                  <li>• "Generate a Python example for the GET /users/{id} endpoint"</li>
                   <li>• "Analyze the API design and suggest improvements"</li>
                   <li>• "Export the documentation in markdown format"</li>
                 </ul>
@@ -311,6 +311,8 @@ node dist/mcp/server.js`;
             <button
               onClick={onClose}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Close
             </button>
           </div>
         </div>
