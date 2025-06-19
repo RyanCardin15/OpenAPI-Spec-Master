@@ -5,7 +5,7 @@
 
 A powerful OpenAPI specification visualizer with advanced filtering, analytics, and AI-powered insights. Features Model Context Protocol (MCP) server integration with both stdio and HTTP transport options for seamless AI client connectivity.
 
-**📦 [Available on NPM](https://www.npmjs.com/package/openapi-spec-master)** - Install with `npx openapi-spec-master`
+**📦 [Available on NPM](https://www.npmjs.com/package/openapi-spec-master)** - Install with `npx openapi-spec-master@latest`
 
 ## Features
 
@@ -39,16 +39,16 @@ A powerful OpenAPI specification visualizer with advanced filtering, analytics, 
 
 ```bash
 # Show setup instructions
-npx openapi-spec-master setup
+npx openapi-spec-master@latest setup
 
 # Start MCP server (stdio transport)
-npx openapi-spec-master mcp
+npx openapi-spec-master@latest mcp
 
 # Start MCP server (HTTP transport)
-npx openapi-spec-master mcp --http
+npx openapi-spec-master@latest mcp --http
 
 # Start web interface (development mode)
-npx openapi-spec-master web
+npx openapi-spec-master@latest web
 ```
 
 ### 📦 Installation
@@ -70,7 +70,7 @@ Easy one-command setup - no installation required!
   "mcpServers": {
     "openapi-spec-master": {
       "command": "npx",
-      "args": ["openapi-spec-master", "mcp"]
+      "args": ["openapi-spec-master@latest", "mcp"]
     }
   }
 }
@@ -82,7 +82,7 @@ Easy one-command setup - no installation required!
   "mcpServers": {
     "openapi-spec-master-http": {
       "command": "npx",
-      "args": ["openapi-spec-master", "mcp", "--http", "--port", "3001"]
+      "args": ["openapi-spec-master@latest", "mcp", "--http", "--port", "3001"]
     }
   }
 }
@@ -117,12 +117,12 @@ For development or customization:
 
 **Test with NPX:**
 ```bash
-npx openapi-spec-master mcp
+npx openapi-spec-master@latest mcp
 ```
 
 **Test HTTP server:**
 ```bash
-npx openapi-spec-master mcp --http
+npx openapi-spec-master@latest mcp --http
 # Check health: curl http://localhost:3001/health
 ```
 

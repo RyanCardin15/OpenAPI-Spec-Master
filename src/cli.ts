@@ -102,30 +102,30 @@ program
 🚀 OpenAPI Spec Master MCP Setup
 
 📋 Quick Start:
-1. Start MCP server: npx openapi-spec-master mcp
+1. Start MCP server: npx openapi-spec-master@latest mcp
 2. Configure your AI client (Claude Desktop, Cursor, etc.)
 
 📖 For detailed setup instructions, visit:
    https://github.com/your-username/openapi-spec-master#mcp-setup
 
 🔧 Available Commands:
-   npx openapi-spec-master mcp          # Start stdio MCP server
-   npx openapi-spec-master mcp --http   # Start HTTP MCP server
-   npx openapi-spec-master setup        # Show this help
-   npx openapi-spec-master web          # Start web interface (dev mode)
+   npx openapi-spec-master@latest mcp          # Start stdio MCP server
+   npx openapi-spec-master@latest mcp --http   # Start HTTP MCP server
+   npx openapi-spec-master@latest setup        # Show this help
+   npx openapi-spec-master@latest web          # Start web interface (dev mode)
 
 💡 Claude Desktop Config Example:
 {
   "mcpServers": {
     "openapi-spec-master": {
       "command": "npx",
-      "args": ["openapi-spec-master", "mcp"]
+      "args": ["openapi-spec-master@latest", "mcp"]
     }
   }
 }
 
 🌐 HTTP Transport (port 3001):
-   npx openapi-spec-master mcp --http --port 3001
+   npx openapi-spec-master@latest mcp --http --port 3001
 `);
   });
 
