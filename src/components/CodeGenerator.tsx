@@ -38,6 +38,9 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
   isOpen, 
   onClose 
 }) => {
+  // Early return BEFORE any hooks
+  if (!isOpen || !spec) return null;
+
   const [activeTab, setActiveTab] = useState<'examples' | 'types' | 'mock' | 'docs'>('examples');
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<'curl' | 'javascript' | 'python' | 'typescript'>('curl');
@@ -52,8 +55,6 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
   // Endpoint filtering
   const [endpointSearch, setEndpointSearch] = useState('');
   const [methodFilter, setMethodFilter] = useState<string>('all');
-
-  if (!isOpen || !spec) return null;
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
