@@ -23,6 +23,7 @@ import {
   List
 } from 'lucide-react';
 import { OpenAPISpec } from '../types/openapi';
+import { DependencyTreeVisualization } from './DependencyTreeVisualization';
 
 interface SchemaExplorerProps {
   spec: OpenAPISpec | null;
@@ -338,76 +339,6 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     });
   };
 
-  const renderDependencyTree = () => {
-    const rootSchemas = schemaNames.filter(name => {
-      // Find schemas that are not dependencies of others (potential roots)
-      const isReferenced = Array.from(findSchemaDependencies.values()).some(deps => deps.includes(name));
-      return !isReferenced || findSchemaDependencies.get(name)?.length === 0;
-    });
-
-    const renderTreeNode = (schemaName: string, level = 0, visited = new Set<string>()): React.ReactNode => {
-      if (visited.has(schemaName) || level > 4) return null;
-      
-      visited.add(schemaName);
-      const dependencies = findSchemaDependencies.get(schemaName) || [];
-      const hasChildren = dependencies.length > 0;
-      const isExpanded = expandedDependencies.has(schemaName);
-
-      return (
-        <div key={`${schemaName}-${level}`} className="relative">
-          <div className={`flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded ${level > 0 ? 'ml-6' : ''}`}>
-            {hasChildren && (
-              <button
-                onClick={() => toggleDependency(schemaName)}
-                className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-500" />
-                )}
-              </button>
-            )}
-            
-            <div className={`w-3 h-3 rounded-full ${
-              level === 0 ? 'bg-blue-500' :
-              level === 1 ? 'bg-green-500' :
-              level === 2 ? 'bg-yellow-500' :
-              'bg-purple-500'
-            }`} />
-            
-            <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
-              {schemaName}
-            </span>
-            
-            {hasChildren && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                {dependencies.length} deps
-              </span>
-            )}
-          </div>
-          
-          {isExpanded && hasChildren && (
-            <div className="ml-4 border-l-2 border-gray-200 dark:border-gray-600 pl-2">
-              {dependencies.map(dep => renderTreeNode(dep, level + 1, new Set(visited)))}
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    return (
-      <div className="space-y-2">
-        {rootSchemas.length > 0 ? (
-          rootSchemas.map(schema => renderTreeNode(schema))
-        ) : (
-          // If no clear roots, show all schemas
-          schemaNames.slice(0, 10).map(schema => renderTreeNode(schema))
-        )}
-      </div>
-    );
-  };
-
   const tabs = [
     { id: 'schemas', label: 'Schemas', icon: Database },
     { id: 'dependencies', label: 'Dependencies', icon: GitBranch },
@@ -606,7 +537,7 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                       `}
                     >
                       <Network className="h-4 w-4" />
-                      Tree View
+                      Visual Tree
                     </button>
                   </div>
                 </div>
@@ -660,44 +591,12 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                     })}
                   </div>
                 ) : (
-                  // Visual Tree View
-                  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                    <div className="mb-4">
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        Dependency Tree Visualization
-                      </h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Click on schema nodes to expand their dependencies. Colors indicate depth levels.
-                      </p>
-                    </div>
-                    
-                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-96 overflow-y-auto">
-                      {renderDependencyTree()}
-                    </div>
-                    
-                    {/* Legend */}
-                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                      <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Legend:</h5>
-                      <div className="flex flex-wrap gap-4 text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                          <span className="text-gray-600 dark:text-gray-400">Root Schemas</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                          <span className="text-gray-600 dark:text-gray-400">Level 1 Dependencies</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                          <span className="text-gray-600 dark:text-gray-400">Level 2 Dependencies</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                          <span className="text-gray-600 dark:text-gray-400">Level 3+ Dependencies</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  // Visual Tree View with Interactive Nodes
+                  <DependencyTreeVisualization
+                    schemas={schemas}
+                    dependencyMap={findSchemaDependencies}
+                    className="h-full"
+                  />
                 )}
               </div>
             </div>
