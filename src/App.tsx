@@ -7,13 +7,16 @@ import { EndpointCard } from './components/EndpointCard';
 import { ExportModal } from './components/ExportModal';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { MCPInstructions } from './components/MCPInstructions';
+import { SchemaExplorer } from './components/SchemaExplorer';
+import { ValidationCenter } from './components/ValidationCenter';
+import { CodeGenerator } from './components/CodeGenerator';
 import { OpenAPIParser } from './utils/openapi-parser';
 import { ExportUtils } from './utils/export-utils';
 import { generateAnalytics } from './utils/analytics';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import { OpenAPISpec, EndpointData, FilterState, GroupingState, ViewState } from './types/openapi';
-import { AlertCircle, Loader2, Zap, FileText, Search, BarChart3, ChevronDown, ChevronRight, Cpu } from 'lucide-react';
+import { AlertCircle, Loader2, Zap, FileText, Search, BarChart3, ChevronDown, ChevronRight, Cpu, Database, Shield, Code } from 'lucide-react';
 
 function App() {
   const [spec, setSpec] = useState<OpenAPISpec | null>(null);
@@ -25,10 +28,10 @@ function App() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isMCPOpen, setIsMCPOpen] = useState(false);
+  const [isSchemaExplorerOpen, setIsSchemaExplorerOpen] = useState(false);
+  const [isValidationCenterOpen, setIsValidationCenterOpen] = useState(false);
+  const [isCodeGeneratorOpen, setIsCodeGeneratorOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  
-  // Theme management
-  const [isDarkMode, setIsDarkMode] = useLocalStorage('darkMode', false);
   
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -64,15 +67,6 @@ function App() {
   const parser = new OpenAPIParser();
   const { filteredEndpoints, groupedEndpoints, totalFiltered } = useAdvancedSearch(endpoints, filters, grouping);
   const analytics = generateAnalytics(endpoints);
-
-  // Apply dark mode class to document
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
 
   // Reset expanded groups when grouping changes
   useEffect(() => {
@@ -324,8 +318,6 @@ function App() {
         onMCPClick={() => setIsMCPOpen(true)}
         searchValue={filters.search}
         onSearchChange={(search) => setFilters({ ...filters, search })}
-        isDarkMode={isDarkMode}
-        onThemeToggle={() => setIsDarkMode(!isDarkMode)}
         isSpecLoaded={!!spec}
       />
 
@@ -373,6 +365,31 @@ function App() {
                     )}
                     <span>Filtered: <strong>{totalFiltered}</strong></span>
                   </div>
+                </div>
+                
+                {/* Advanced Tools */}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setIsSchemaExplorerOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                  >
+                    <Database className="h-4 w-4" />
+                    Schema Explorer
+                  </button>
+                  <button
+                    onClick={() => setIsValidationCenterOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Validation
+                  </button>
+                  <button
+                    onClick={() => setIsCodeGeneratorOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm"
+                  >
+                    <Code className="h-4 w-4" />
+                    Code Gen
+                  </button>
                 </div>
               </div>
             </div>
@@ -553,6 +570,26 @@ function App() {
       <MCPInstructions
         isOpen={isMCPOpen}
         onClose={() => setIsMCPOpen(false)}
+      />
+
+      <SchemaExplorer
+        spec={spec}
+        isOpen={isSchemaExplorerOpen}
+        onClose={() => setIsSchemaExplorerOpen(false)}
+      />
+
+      <ValidationCenter
+        spec={spec}
+        endpoints={endpoints}
+        isOpen={isValidationCenterOpen}
+        onClose={() => setIsValidationCenterOpen(false)}
+      />
+
+      <CodeGenerator
+        spec={spec}
+        endpoints={endpoints}
+        isOpen={isCodeGeneratorOpen}
+        onClose={() => setIsCodeGeneratorOpen(false)}
       />
     </div>
   );

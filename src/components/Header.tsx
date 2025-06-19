@@ -22,8 +22,6 @@ interface HeaderProps {
   onMCPClick: () => void;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  isDarkMode: boolean;
-  onThemeToggle: () => void;
   isSpecLoaded: boolean;
 }
 
@@ -37,8 +35,6 @@ export const Header: React.FC<HeaderProps> = ({
   onMCPClick,
   searchValue,
   onSearchChange,
-  isDarkMode,
-  onThemeToggle,
   isSpecLoaded
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
