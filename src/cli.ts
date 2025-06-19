@@ -11,8 +11,8 @@ const __dirname = dirname(__filename);
 const program = new Command();
 
 program
-  .name('openapi-explorer')
-  .description('OpenAPI Explorer with MCP server integration')
+  .name('openapi-spec-master')
+  .description('OpenAPI Spec Master with MCP server integration')
   .version('1.0.0');
 
 program
@@ -30,7 +30,7 @@ program
       env.PORT = options.port;
     }
 
-    console.log(`🚀 Starting OpenAPI Explorer MCP Server (${options.http ? 'HTTP' : 'stdio'} transport)...`);
+    console.log(`🚀 Starting OpenAPI Spec Master MCP Server (${options.http ? 'HTTP' : 'stdio'} transport)...`);
     
     if (options.http) {
       console.log(`📡 HTTP server will be available on port ${options.port || 3001}`);
@@ -66,7 +66,7 @@ program
   .description('Start the web interface (development server)')
   .option('-p, --port <port>', 'Port for web server', '5173')
   .action((options) => {
-    console.log('🌐 Starting OpenAPI Explorer web interface...');
+    console.log('🌐 Starting OpenAPI Spec Master web interface...');
     console.log(`📱 Web interface will be available on http://localhost:${options.port}`);
     
     const child = spawn('npx', ['vite', '--port', options.port], {
@@ -99,33 +99,33 @@ program
   .description('Show setup instructions for MCP integration')
   .action(() => {
     console.log(`
-🚀 OpenAPI Explorer MCP Setup
+🚀 OpenAPI Spec Master MCP Setup
 
 📋 Quick Start:
-1. Start MCP server: npx openapi-explorer mcp
+1. Start MCP server: npx openapi-spec-master mcp
 2. Configure your AI client (Claude Desktop, Cursor, etc.)
 
 📖 For detailed setup instructions, visit:
-   https://github.com/your-username/openapi-explorer#mcp-setup
+   https://github.com/your-username/openapi-spec-master#mcp-setup
 
 🔧 Available Commands:
-   npx openapi-explorer mcp          # Start stdio MCP server
-   npx openapi-explorer mcp --http   # Start HTTP MCP server
-   npx openapi-explorer setup        # Show this help
-   npx openapi-explorer web          # Start web interface (dev mode)
+   npx openapi-spec-master mcp          # Start stdio MCP server
+   npx openapi-spec-master mcp --http   # Start HTTP MCP server
+   npx openapi-spec-master setup        # Show this help
+   npx openapi-spec-master web          # Start web interface (dev mode)
 
 💡 Claude Desktop Config Example:
 {
   "mcpServers": {
-    "openapi-explorer": {
+    "openapi-spec-master": {
       "command": "npx",
-      "args": ["openapi-explorer", "mcp"]
+      "args": ["openapi-spec-master", "mcp"]
     }
   }
 }
 
 🌐 HTTP Transport (port 3001):
-   npx openapi-explorer mcp --http --port 3001
+   npx openapi-spec-master mcp --http --port 3001
 `);
   });
 

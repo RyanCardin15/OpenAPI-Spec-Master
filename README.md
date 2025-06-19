@@ -1,6 +1,11 @@
-# OpenAPI Explorer with MCP Integration
+# OpenAPI Spec Master
 
-A powerful OpenAPI specification visualizer with advanced filtering, analytics, and AI-powered insights. Now includes Model Context Protocol (MCP) server integration with both stdio and HTTP transport options for seamless AI client connectivity.
+[![npm version](https://badge.fury.io/js/openapi-spec-master.svg)](https://badge.fury.io/js/openapi-spec-master)
+[![NPM](https://img.shields.io/npm/l/openapi-spec-master.svg)](https://www.npmjs.com/package/openapi-spec-master)
+
+A powerful OpenAPI specification visualizer with advanced filtering, analytics, and AI-powered insights. Features Model Context Protocol (MCP) server integration with both stdio and HTTP transport options for seamless AI client connectivity.
+
+**📦 [Available on NPM](https://www.npmjs.com/package/openapi-spec-master)** - Install with `npx openapi-spec-master`
 
 ## Features
 
@@ -28,73 +33,96 @@ A powerful OpenAPI specification visualizer with advanced filtering, analytics, 
 
 ## Quick Start
 
-### Web Application
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Start the development server: `npm run dev`
-4. Open your browser and load an OpenAPI specification
+### 🚀 NPX Usage (Recommended)
 
-### MCP Server Setup
+**Get started instantly without installation:**
 
-#### 1. Build the MCP Servers
 ```bash
-npm install
-npm run mcp:build      # Build stdio server
-npm run mcp:http:build # Build HTTP server
+# Show setup instructions
+npx openapi-spec-master setup
+
+# Start MCP server (stdio transport)
+npx openapi-spec-master mcp
+
+# Start MCP server (HTTP transport)
+npx openapi-spec-master mcp --http
+
+# Start web interface (development mode)
+npx openapi-spec-master web
 ```
 
-#### 2. Choose Your Transport
+### 📦 Installation
 
-##### Option A: Stdio Transport (Recommended)
-Best for Claude Desktop and standard MCP clients.
+If you prefer to install globally:
+
+```bash
+npm install -g openapi-spec-master
+```
+
+### 🤖 MCP Server Setup
+
+#### Option A: NPX (Recommended)
+Easy one-command setup - no installation required!
 
 **Configure Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 ```json
 {
   "mcpServers": {
-    "openapi-explorer": {
-      "command": "node",
-      "args": ["path/to/your/openapi-explorer/dist/mcp/server.js"],
-      "env": {}
+    "openapi-spec-master": {
+      "command": "npx",
+      "args": ["openapi-spec-master", "mcp"]
     }
   }
 }
 ```
 
-##### Option B: HTTP Transport (Advanced)
-Provides RESTful API access and streaming capabilities.
-
-**Configure Claude Desktop for HTTP:**
+**For HTTP transport:**
 ```json
 {
   "mcpServers": {
-    "openapi-explorer-http": {
-      "command": "node",
-      "args": ["path/to/your/openapi-explorer/dist/mcp/http-server.js"],
-      "env": {
-        "PORT": "3001"
-      }
+    "openapi-spec-master-http": {
+      "command": "npx",
+      "args": ["openapi-spec-master", "mcp", "--http", "--port", "3001"]
     }
   }
 }
 ```
 
-**Or run HTTP server standalone:**
-```bash
-node dist/mcp/http-server.js
-# Server runs on http://localhost:3001
+#### Option B: Local Development
+For development or customization:
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Build the servers: `npm run build:all`
+
+**Configure with local build:**
+```json
+{
+  "mcpServers": {
+    "openapi-spec-master": {
+      "command": "node",
+      "args": ["path/to/openapi-spec-master/dist/mcp/server.js"]
+    }
+  }
+}
 ```
 
-#### 3. Test the Connection
+### Web Application (Development)
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Start the development server: `npm run dev`
+4. Open your browser and load an OpenAPI specification
 
-**Test Stdio Server:**
+#### Test the Connection
+
+**Test with NPX:**
 ```bash
-node dist/mcp/server.js
+npx openapi-spec-master mcp
 ```
 
-**Test HTTP Server:**
+**Test HTTP server:**
 ```bash
-node dist/mcp/http-server.js
+npx openapi-spec-master mcp --http
 # Check health: curl http://localhost:3001/health
 ```
 

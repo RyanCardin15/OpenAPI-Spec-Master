@@ -1,20 +1,28 @@
 {
-  "name": "openapi-explorer",
+  "name": "openapi-spec-master",
   "private": false,
   "version": "1.0.0",
   "type": "module",
   "description": "Advanced OpenAPI specification visualizer with MCP server integration",
-  "keywords": ["openapi", "swagger", "api", "documentation", "mcp", "claude", "ai"],
-  "author": "OpenAPI Explorer",
+  "keywords": [
+    "openapi",
+    "swagger",
+    "api",
+    "documentation",
+    "mcp",
+    "claude",
+    "ai"
+  ],
+  "author": "OpenAPI Spec Master",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/your-username/openapi-explorer.git"
-  },
+      "repository": {
+      "type": "git",
+      "url": "git+https://github.com/your-username/openapi-spec-master.git"
+    },
   "bin": {
-    "openapi-explorer": "./dist/cli.js",
-    "openapi-mcp": "./dist/mcp/server.js",
-    "openapi-mcp-http": "./dist/mcp/http-server.js"
+    "openapi-spec-master": "dist/cli.js",
+    "openapi-mcp": "dist/mcp/server.js",
+    "openapi-mcp-http": "dist/mcp/http-server.js"
   },
   "files": [
     "dist/",
