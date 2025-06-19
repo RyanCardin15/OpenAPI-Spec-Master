@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Copy, CheckCircle, Terminal, Settings, Zap, Code, FileText, Globe, Server, ChevronDown, ChevronUp, Search, BarChart3, Shield, Download, Wrench, Eye } from 'lucide-react';
+import { X, Copy, CheckCircle, Terminal, Settings, Zap, Code, FileText, Globe, Server, ChevronDown, ChevronUp, Search, BarChart3, Shield, Download, Wrench, Eye, Package } from 'lucide-react';
 
 interface MCPInstructionsProps {
   isOpen: boolean;
@@ -21,6 +21,24 @@ export const MCPInstructions: React.FC<MCPInstructionsProps> = ({ isOpen, onClos
       console.error('Failed to copy text: ', err);
     }
   };
+
+  const claudeConfigNpx = `{
+  "mcpServers": {
+    "openapi-explorer": {
+      "command": "npx",
+      "args": ["openapi-explorer", "mcp"]
+    }
+  }
+}`;
+
+  const claudeConfigNpxHttp = `{
+  "mcpServers": {
+    "openapi-explorer-http": {
+      "command": "npx",
+      "args": ["openapi-explorer", "mcp", "--http", "--port", "3001"]
+    }
+  }
+}`;
 
   const claudeConfig = `{
   "mcpServers": {
@@ -44,40 +62,39 @@ export const MCPInstructions: React.FC<MCPInstructionsProps> = ({ isOpen, onClos
   }
 }`;
 
-  const cursorConfig = `{
-  "mcp": {
-    "servers": {
-      "openapi-explorer": {
-        "command": "node",
-        "args": ["path/to/your/openapi-explorer/dist/mcp/server.js"]
-      }
-    }
-  }
-}`;
+  const npxCommands = `# Quick start - no installation needed!
+npx openapi-explorer mcp
 
-  const installCommands = `# Clone or download the OpenAPI Explorer project
+# HTTP transport with custom port
+npx openapi-explorer mcp --http --port 3001
+
+# Show setup instructions
+npx openapi-explorer setup
+
+# Start web interface (development mode)
+npx openapi-explorer web`;
+
+  const installCommands = `# Option 1: Use npx (recommended - no installation needed)
+npx openapi-explorer mcp
+
+# Option 2: Install globally
+npm install -g openapi-explorer
+openapi-explorer mcp
+
+# Option 3: Clone and build from source
 git clone <repository-url>
 cd openapi-explorer
-
-# Install dependencies
 npm install
+npm run build:all`;
 
-# Build both MCP servers
-npm run mcp:build
-npm run mcp:http:build
+  const testCommands = `# Test with npx (easiest)
+npx openapi-explorer mcp
 
-# Servers will be available at:
-# - dist/mcp/server.js (stdio transport)
-# - dist/mcp/http-server.js (HTTP transport)`;
+# Test HTTP server
+npx openapi-explorer mcp --http
 
-  const testStdioCommand = `# Test the stdio MCP server
-node dist/mcp/server.js`;
-
-  const testHttpCommand = `# Test the HTTP MCP server
-node dist/mcp/http-server.js
-
-# Or with custom port
-PORT=3002 node dist/mcp/http-server.js`;
+# Check if it's working
+curl http://localhost:3001/health  # (for HTTP mode)`;
 
   const httpExamples = `# Health check
 curl http://localhost:3001/health
@@ -496,11 +513,39 @@ curl -X POST http://localhost:3001/mcp/execute \\
             
             {isConnectSectionOpen && (
               <div className="px-4 pb-4 space-y-6">
-                {/* Installation */}
+                {/* Quick Start with npx */}
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <h4 className="text-md font-semibold text-green-900 dark:text-green-100">
+                      ⚡ Quick Start (Recommended)
+                    </h4>
+                  </div>
+                  <p className="text-green-800 dark:text-green-200 text-sm mb-3">
+                    No installation needed! Use npx to run the MCP server directly:
+                  </p>
+                  <div className="bg-gray-900 rounded-lg p-4 relative">
+                    <button
+                      onClick={() => copyToClipboard(npxCommands, 'npx-commands')}
+                      className="absolute top-2 right-2 p-2 hover:bg-gray-800 rounded transition-colors"
+                    >
+                      {copiedText === 'npx-commands' ? (
+                        <CheckCircle className="h-4 w-4 text-green-400" />
+                      ) : (
+                        <Copy className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                    <pre className="text-green-400 text-sm overflow-x-auto">
+                      <code>{npxCommands}</code>
+                    </pre>
+                  </div>
+                </div>
+
+                {/* Installation Options */}
                 <div>
                   <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <Terminal className="h-4 w-4" />
-                    Step 1: Install & Build
+                    Installation Options
                   </h4>
                   <div className="bg-gray-900 rounded-lg p-4 relative">
                     <button
@@ -523,11 +568,8 @@ curl -X POST http://localhost:3001/mcp/execute \\
                 <div>
                   <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <Settings className="h-4 w-4" />
-                    Step 2: Configure Claude Desktop
+                    Configure Claude Desktop
                   </h4>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Choose between stdio (recommended) or HTTP transport:
-                  </p>
                   
                   <div className="space-y-6">
                     <div>
@@ -541,7 +583,49 @@ curl -X POST http://localhost:3001/mcp/execute \\
                     </div>
 
                     <div>
-                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">Option A: Stdio Transport (Recommended)</h5>
+                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">
+                        ⚡ Option A: Using npx (Recommended - No Installation)
+                      </h5>
+                      <div className="bg-gray-900 rounded-lg p-4 relative">
+                        <button
+                          onClick={() => copyToClipboard(claudeConfigNpx, 'claude-npx')}
+                          className="absolute top-2 right-2 p-2 hover:bg-gray-800 rounded transition-colors"
+                        >
+                          {copiedText === 'claude-npx' ? (
+                            <CheckCircle className="h-4 w-4 text-green-400" />
+                          ) : (
+                            <Copy className="h-4 w-4 text-gray-400" />
+                          )}
+                        </button>
+                        <pre className="text-green-400 text-sm overflow-x-auto">
+                          <code>{claudeConfigNpx}</code>
+                        </pre>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">
+                        🌐 Option B: npx with HTTP Transport
+                      </h5>
+                      <div className="bg-gray-900 rounded-lg p-4 relative">
+                        <button
+                          onClick={() => copyToClipboard(claudeConfigNpxHttp, 'claude-npx-http')}
+                          className="absolute top-2 right-2 p-2 hover:bg-gray-800 rounded transition-colors"
+                        >
+                          {copiedText === 'claude-npx-http' ? (
+                            <CheckCircle className="h-4 w-4 text-green-400" />
+                          ) : (
+                            <Copy className="h-4 w-4 text-gray-400" />
+                          )}
+                        </button>
+                        <pre className="text-green-400 text-sm overflow-x-auto">
+                          <code>{claudeConfigNpxHttp}</code>
+                        </pre>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">Option C: Local Installation (Advanced)</h5>
                       <div className="bg-gray-900 rounded-lg p-4 relative">
                         <button
                           onClick={() => copyToClipboard(claudeConfig, 'claude-stdio')}
@@ -557,30 +641,8 @@ curl -X POST http://localhost:3001/mcp/execute \\
                           <code>{claudeConfig}</code>
                         </pre>
                       </div>
-                    </div>
-
-                    <div>
-                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">Option B: HTTP Transport</h5>
-                      <div className="bg-gray-900 rounded-lg p-4 relative">
-                        <button
-                          onClick={() => copyToClipboard(claudeHttpConfig, 'claude-http')}
-                          className="absolute top-2 right-2 p-2 hover:bg-gray-800 rounded transition-colors"
-                        >
-                          {copiedText === 'claude-http' ? (
-                            <CheckCircle className="h-4 w-4 text-green-400" />
-                          ) : (
-                            <Copy className="h-4 w-4 text-gray-400" />
-                          )}
-                        </button>
-                        <pre className="text-green-400 text-sm overflow-x-auto">
-                          <code>{claudeHttpConfig}</code>
-                        </pre>
-                      </div>
-                    </div>
-
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                      <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-                        <strong>Important:</strong> Replace <code>path/to/your/openapi-explorer</code> with the actual path to your OpenAPI Explorer installation.
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        Replace <code>path/to/your/openapi-explorer</code> with the actual installation path.
                       </p>
                     </div>
                   </div>
@@ -590,44 +652,25 @@ curl -X POST http://localhost:3001/mcp/execute \\
                 <div>
                   <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <CheckCircle className="h-4 w-4" />
-                    Step 3: Test the Connection
+                    Test the Connection
                   </h4>
                   
                   <div className="space-y-4">
                     <div>
-                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">Test Stdio Server:</h5>
+                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">Quick Test:</h5>
                       <div className="bg-gray-900 rounded-lg p-4 relative">
                         <button
-                          onClick={() => copyToClipboard(testStdioCommand, 'test-stdio')}
+                          onClick={() => copyToClipboard(testCommands, 'test-commands')}
                           className="absolute top-2 right-2 p-2 hover:bg-gray-800 rounded transition-colors"
                         >
-                          {copiedText === 'test-stdio' ? (
+                          {copiedText === 'test-commands' ? (
                             <CheckCircle className="h-4 w-4 text-green-400" />
                           ) : (
                             <Copy className="h-4 w-4 text-gray-400" />
                           )}
                         </button>
                         <pre className="text-green-400 text-sm overflow-x-auto">
-                          <code>{testStdioCommand}</code>
-                        </pre>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h5 className="font-medium text-gray-900 dark:text-white mb-2">Test HTTP Server:</h5>
-                      <div className="bg-gray-900 rounded-lg p-4 relative">
-                        <button
-                          onClick={() => copyToClipboard(testHttpCommand, 'test-http')}
-                          className="absolute top-2 right-2 p-2 hover:bg-gray-800 rounded transition-colors"
-                        >
-                          {copiedText === 'test-http' ? (
-                            <CheckCircle className="h-4 w-4 text-green-400" />
-                          ) : (
-                            <Copy className="h-4 w-4 text-gray-400" />
-                          )}
-                        </button>
-                        <pre className="text-green-400 text-sm overflow-x-auto">
-                          <code>{testHttpCommand}</code>
+                          <code>{testCommands}</code>
                         </pre>
                       </div>
                     </div>
@@ -701,11 +744,11 @@ curl -X POST http://localhost:3001/mcp/execute \\
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
                 <h4 className="font-medium text-red-900 dark:text-red-100 mb-2">Common Issues:</h4>
                 <ul className="text-sm text-red-800 dark:text-red-200 space-y-1">
-                  <li>• <strong>Path not found:</strong> Ensure the server.js path is correct in your config</li>
-                  <li>• <strong>Permission denied:</strong> Make sure Node.js has execution permissions</li>
-                  <li>• <strong>Module not found:</strong> Run <code>npm install</code> in the project directory</li>
-                  <li>• <strong>Port in use:</strong> Change the PORT environment variable for HTTP server</li>
-                  <li>• <strong>Server not responding:</strong> Check that the build completed successfully</li>
+                  <li>• <strong>npx command not found:</strong> Make sure Node.js and npm are installed</li>
+                  <li>• <strong>Permission denied:</strong> Try running with administrator/sudo privileges</li>
+                  <li>• <strong>Port in use:</strong> Change the port with <code>--port 3002</code> for HTTP mode</li>
+                  <li>• <strong>Network issues:</strong> Check firewall settings for HTTP transport</li>
+                  <li>• <strong>Claude not connecting:</strong> Restart Claude Desktop after config changes</li>
                 </ul>
               </div>
             </div>

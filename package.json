@@ -1,17 +1,38 @@
 {
-  "name": "openapi-visualizer",
-  "private": true,
-  "version": "0.0.0",
+  "name": "openapi-explorer",
+  "private": false,
+  "version": "1.0.0",
   "type": "module",
+  "description": "Advanced OpenAPI specification visualizer with MCP server integration",
+  "keywords": ["openapi", "swagger", "api", "documentation", "mcp", "claude", "ai"],
+  "author": "OpenAPI Explorer",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/openapi-explorer.git"
+  },
+  "bin": {
+    "openapi-explorer": "./dist/cli.js",
+    "openapi-mcp": "./dist/mcp/server.js",
+    "openapi-mcp-http": "./dist/mcp/http-server.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "package.json"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:all": "npm run build && npm run mcp:build && npm run mcp:http:build && npm run cli:build",
     "lint": "eslint .",
     "preview": "vite preview",
     "mcp:dev": "node --loader ts-node/esm src/mcp/server.ts",
     "mcp:build": "tsc src/mcp/server.ts --outDir dist/mcp --target es2022 --module node16 --moduleResolution node16",
     "mcp:http": "node --loader ts-node/esm src/mcp/http-server.ts",
-    "mcp:http:build": "tsc src/mcp/http-server.ts --outDir dist/mcp --target es2022 --module node16 --moduleResolution node16"
+    "mcp:http:build": "tsc src/mcp/http-server.ts --outDir dist/mcp --target es2022 --module node16 --moduleResolution node16",
+    "cli:build": "tsc src/cli.ts --outDir dist --target es2022 --module node16 --moduleResolution node16",
+    "prepublishOnly": "npm run build:all"
   },
   "dependencies": {
     "lucide-react": "^0.344.0",
@@ -23,7 +44,8 @@
     "jspdf": "^2.5.1",
     "@modelcontextprotocol/sdk": "^0.5.0",
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "commander": "^11.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
