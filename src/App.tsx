@@ -13,7 +13,7 @@ import { generateAnalytics } from './utils/analytics';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useAdvancedSearch } from './hooks/useAdvancedSearch';
 import { OpenAPISpec, EndpointData, FilterState, GroupingState, ViewState } from './types/openapi';
-import { AlertCircle, Loader2, Zap, FileText, Search, BarChart3, ChevronDown, ChevronRight } from 'lucide-react';
+import { AlertCircle, Loader2, Zap, FileText, Search, BarChart3, ChevronDown, ChevronRight, Cpu } from 'lucide-react';
 
 function App() {
   const [spec, setSpec] = useState<OpenAPISpec | null>(null);
@@ -261,20 +261,69 @@ function App() {
             </div>
           )}
 
-          {/* Theme Toggle */}
-          <div className="fixed bottom-6 right-6">
+          {/* Action Buttons */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => setIsMCPOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-colors font-medium"
+            >
+              <Cpu className="h-5 w-5" />
+              MCP Integration
+            </button>
+            
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-lg hover:shadow-xl transition-all"
+              className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               {isDarkMode ? (
-                <div className="h-6 w-6 bg-yellow-400 rounded-full" />
+                <>
+                  <div className="h-5 w-5 bg-yellow-400 rounded-full" />
+                  Light Mode
+                </>
               ) : (
-                <div className="h-6 w-6 bg-gray-800 rounded-full" />
+                <>
+                  <div className="h-5 w-5 bg-gray-800 rounded-full" />
+                  Dark Mode
+                </>
               )}
             </button>
           </div>
+
+          {/* MCP Feature Highlight */}
+          <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+                <Cpu className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  🤖 AI-Powered API Analysis
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-4">
+                  Connect this OpenAPI Explorer to Claude Desktop, Cursor, or other AI clients via Model Context Protocol (MCP). 
+                  Get instant API insights, generate code examples, and validate designs through natural conversation.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm rounded-full">
+                    Load & Analyze APIs
+                  </span>
+                  <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm rounded-full">
+                    Generate Code Examples
+                  </span>
+                  <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-sm rounded-full">
+                    Validate API Design
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* MCP Instructions Modal */}
+        <MCPInstructions
+          isOpen={isMCPOpen}
+          onClose={() => setIsMCPOpen(false)}
+        />
       </div>
     );
   }
