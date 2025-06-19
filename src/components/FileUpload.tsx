@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle, Globe, Loader2 } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, Globe, Loader2, Zap } from 'lucide-react';
 
 interface FileUploadProps {
   onFileUpload: (file: File) => void;
@@ -59,6 +59,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setUrlInput('');
       setActiveTab('file');
     }
+  };
+
+  const handleDemoClick = () => {
+    const petstoreUrl = 'https://petstore.swagger.io/v2/swagger.json';
+    onUrlUpload(petstoreUrl);
   };
 
   const isValidUrl = (url: string) => {
@@ -124,17 +129,60 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             Drag and drop your OpenAPI spec file, or click to browse
           </p>
 
-          <label className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg cursor-pointer transition-colors">
-            <Upload className="h-4 w-4" />
-            Choose File
-            <input
-              type="file"
-              accept=".json,.yaml,.yml"
-              onChange={handleFileInput}
-              className="hidden"
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+            <label className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg cursor-pointer transition-colors">
+              <Upload className="h-4 w-4" />
+              Choose File
+              <input
+                type="file"
+                accept=".json,.yaml,.yml"
+                onChange={handleFileInput}
+                className="hidden"
+                disabled={isLoading}
+              />
+            </label>
+
+            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+              <div className="h-px bg-gray-300 dark:bg-gray-600 w-8"></div>
+              <span className="text-sm font-medium">OR</span>
+              <div className="h-px bg-gray-300 dark:bg-gray-600 w-8"></div>
+            </div>
+
+            <button
+              onClick={handleDemoClick}
               disabled={isLoading}
-            />
-          </label>
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading Demo...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-4 w-4" />
+                  Try Demo
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Demo Info */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500 rounded-lg">
+                <Zap className="h-4 w-4 text-white" />
+              </div>
+              <div className="text-left">
+                <h4 className="font-semibold text-green-900 dark:text-green-100 text-sm">
+                  🚀 Try the Demo
+                </h4>
+                <p className="text-green-800 dark:text-green-200 text-sm">
+                  Click "Try Demo" to instantly load the Petstore API example and explore all features
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="mt-6 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
             <AlertCircle className="h-4 w-4 mr-2" />
@@ -211,6 +259,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               placeholder="https://petstore.swagger.io/v2/swagger.json"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
+          </div>
+
+          {/* Quick Demo Button */}
+          <div className="mb-6">
+            <button
+              onClick={() => setUrlInput('https://petstore.swagger.io/v2/swagger.json')}
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium underline"
+            >
+              Use Petstore Demo URL
+            </button>
           </div>
 
           {/* Common URL Examples */}
