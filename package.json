@@ -1,7 +1,7 @@
 {
   "name": "openapi-spec-master",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Advanced OpenAPI specification visualizer with MCP server integration",
   "keywords": [
@@ -15,10 +15,10 @@
   ],
   "author": "OpenAPI Spec Master",
   "license": "MIT",
-      "repository": {
-      "type": "git",
-      "url": "git+https://github.com/your-username/openapi-spec-master.git"
-    },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/openapi-spec-master.git"
+  },
   "bin": {
     "openapi-spec-master": "dist/cli.js",
     "openapi-mcp": "dist/mcp/server.js",
