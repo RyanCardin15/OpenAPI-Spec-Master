@@ -41,9 +41,6 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
   isOpen, 
   onClose 
 }) => {
-  // Early return BEFORE any hooks
-  if (!isOpen || !spec) return null;
-
   const [activeTab, setActiveTab] = useState<'examples' | 'types' | 'mock' | 'docs'>('examples');
   const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<'curl' | 'javascript' | 'python' | 'typescript'>('curl');
@@ -313,6 +310,8 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
   };
 
   const generateTypeScriptTypes = (): string => {
+    if (!spec) return '';
+    
     const schemas = spec.components?.schemas || {};
     let types = `// Generated TypeScript types from OpenAPI specification\n`;
     types += `// Generated on ${new Date().toISOString()}\n\n`;
@@ -387,6 +386,8 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
   };
 
   const generateMockDataFile = (): string => {
+    if (!spec) return '';
+    
     const schemas = spec.components?.schemas || {};
     let mockData = `// Generated mock data for testing\n`;
     mockData += `// Generated on ${new Date().toISOString()}\n\n`;
@@ -446,6 +447,8 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
   };
 
   const generateDocumentation = (): string => {
+    if (!spec) return '';
+    
     let docs = `# ${spec.info.title} API Documentation\n\n`;
     docs += `**Version:** ${spec.info.version}\n`;
     docs += `**Generated:** ${new Date().toISOString()}\n\n`;
@@ -529,6 +532,8 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
 
   // Type definitions for filtering
   const typeDefinitions = useMemo((): TypeDefinition[] => {
+    if (!spec) return [];
+    
     const schemas = spec.components?.schemas || {};
     return Object.entries(schemas).map(([name, schema]: [string, any]) => ({
       name,
@@ -620,6 +625,9 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
     const types = new Set(typeDefinitions.map(type => type.type));
     return Array.from(types).sort();
   }, [typeDefinitions]);
+
+  // Early return AFTER all hooks have been called
+  if (!isOpen || !spec) return null;
 
   const tabs = [
     { id: 'examples', label: 'Code Examples', icon: Code },

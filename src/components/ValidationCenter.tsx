@@ -49,9 +49,9 @@ export const ValidationCenter: React.FC<ValidationCenterProps> = ({
   const [sortBy, setSortBy] = useState<'severity' | 'type' | 'category'>('severity');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  if (!isOpen || !spec) return null;
-
   const validateAPIDesign = (): ValidationResult[] => {
+    if (!spec || !endpoints) return [];
+    
     const results: ValidationResult[] = [];
 
     // Check for missing descriptions
@@ -154,6 +154,8 @@ export const ValidationCenter: React.FC<ValidationCenterProps> = ({
   };
 
   const validateSecurity = (): ValidationResult[] => {
+    if (!spec || !endpoints) return [];
+    
     const results: ValidationResult[] = [];
 
     // Check for security schemes
@@ -232,6 +234,8 @@ export const ValidationCenter: React.FC<ValidationCenterProps> = ({
   };
 
   const validateExamples = (): ValidationResult[] => {
+    if (!spec || !endpoints) return [];
+    
     const results: ValidationResult[] = [];
 
     // Check for missing examples
@@ -304,6 +308,8 @@ export const ValidationCenter: React.FC<ValidationCenterProps> = ({
   };
 
   const findUnusedSchemas = (): ValidationResult[] => {
+    if (!spec || !endpoints) return [];
+    
     const results: ValidationResult[] = [];
     const schemas = spec.components?.schemas || {};
     const usedSchemas = new Set<string>();
@@ -368,6 +374,8 @@ export const ValidationCenter: React.FC<ValidationCenterProps> = ({
   };
 
   const analyzeEvolution = (): ValidationResult[] => {
+    if (!spec || !endpoints) return [];
+    
     const results: ValidationResult[] = [];
 
     // Check for versioning strategy
@@ -498,6 +506,9 @@ export const ValidationCenter: React.FC<ValidationCenterProps> = ({
 
     return filtered;
   }, [currentResults, searchQuery, severityFilter, typeFilter, sortBy, sortOrder]);
+
+  // Early return AFTER all hooks have been called
+  if (!isOpen || !spec) return null;
 
   const getResultIcon = (type: string) => {
     switch (type) {
