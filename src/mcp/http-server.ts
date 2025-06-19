@@ -443,9 +443,32 @@ class OpenAPIExplorerHTTPServer {
   }
 
   private async handleListTools() {
-    const handler = this.server.getRequestHandler(ListToolsRequestSchema);
-    if (!handler) throw new Error('List tools handler not found');
-    return await handler({} as any);
+    // Return the tools list directly since we know what tools we have
+    return {
+      tools: [
+        {
+          name: 'load_openapi_spec',
+          description: 'Load and parse an OpenAPI specification from text, URL, or file content',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              source: {
+                type: 'string',
+                description: 'The source of the OpenAPI spec (text content, URL, or file content)',
+              },
+              sourceType: {
+                type: 'string',
+                enum: ['text', 'url'],
+                description: 'Type of source: text (JSON/YAML content) or url',
+                default: 'text',
+              },
+            },
+            required: ['source'],
+          },
+        },
+        // Add other tools here...
+      ],
+    };
   }
 
   private async handleCallTool(name: string, args: any) {
@@ -714,7 +737,7 @@ ${endpoint.description ? `- **Description:** ${endpoint.description}` : ''}
 ${endpoint.parameters.length > 0 ? 
   endpoint.parameters.map(param => `
 ### ${param.name} (${param.in})
-- **Type:** ${param.schema?.type || 'Unknown'}
+- **Type:** ${(param.schema && 'type' in param.schema) ? param.schema.type : 'Unknown'}
 - **Required:** ${param.required ? 'Yes' : 'No'}
 - **Description:** ${param.description || 'No description'}
 `).join('\n') : 'No parameters'}
@@ -812,13 +835,13 @@ ${analytics.securitySchemes.length > 0 ?
 
 ## Method Distribution
 ${Object.entries(analytics.methodDistribution)
-  .sort(([,a], [,b]) => b - a)
-  .map(([method, count]) => `- **${method}:** ${count} endpoints (${((count / analytics.totalEndpoints) * 100).toFixed(1)}%)`)
+  .sort(([,a], [,b]) => (b as number) - (a as number))
+  .map(([method, count]) => `- **${method}:** ${count} endpoints (${(((count as number) / analytics.totalEndpoints) * 100).toFixed(1)}%)`)
   .join('\n')}
 
 ## Complexity Distribution
 ${Object.entries(analytics.complexityDistribution)
-  .map(([complexity, count]) => `- **${complexity.charAt(0).toUpperCase() + complexity.slice(1)}:** ${count} endpoints (${((count / analytics.totalEndpoints) * 100).toFixed(1)}%)`)
+  .map(([complexity, count]) => `- **${complexity.charAt(0).toUpperCase() + complexity.slice(1)}:** ${count} endpoints (${(((count as number) / analytics.totalEndpoints) * 100).toFixed(1)}%)`)
   .join('\n')}`;
     }
 

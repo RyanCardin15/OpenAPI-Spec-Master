@@ -28,9 +28,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "mcp:dev": "node --loader ts-node/esm src/mcp/server.ts",
-    "mcp:build": "tsc src/mcp/server.ts --outDir dist/mcp --target es2022 --module node16 --moduleResolution node16",
+    "mcp:build": "tsc src/mcp/server.ts --outDir dist --target es2022 --module node16 --moduleResolution node16",
     "mcp:http": "node --loader ts-node/esm src/mcp/http-server.ts",
-    "mcp:http:build": "tsc src/mcp/http-server.ts --outDir dist/mcp --target es2022 --module node16 --moduleResolution node16",
+    "mcp:http:build": "tsc src/mcp/http-server.ts --outDir dist --target es2022 --module node16 --moduleResolution node16",
     "cli:build": "tsc src/cli.ts --outDir dist --target es2022 --module node16 --moduleResolution node16",
     "prepublishOnly": "npm run build:all"
   },

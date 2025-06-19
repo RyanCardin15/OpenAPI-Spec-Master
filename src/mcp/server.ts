@@ -329,7 +329,7 @@ ${Object.entries(analytics.complexityDistribution)
 
 ## Top Response Codes
 ${Object.entries(analytics.responseCodeDistribution)
-  .sort(([,a], [,b]) => b - a)
+  .sort(([,a], [,b]) => (b as number) - (a as number))
   .slice(0, 5)
   .map(([code, count]) => `- **${code}:** ${count} endpoints`)
   .join('\n')}`,
@@ -458,7 +458,7 @@ ${endpoint.description ? `- **Description:** ${endpoint.description}` : ''}
 ${endpoint.parameters.length > 0 ? 
   endpoint.parameters.map(param => `
 ### ${param.name} (${param.in})
-- **Type:** ${param.schema?.type || 'Unknown'}
+- **Type:** ${(param.schema && 'type' in param.schema) ? param.schema.type : 'Unknown'}
 - **Required:** ${param.required ? 'Yes' : 'No'}
 - **Description:** ${param.description || 'No description'}
 `).join('\n') : 'No parameters'}
@@ -638,25 +638,25 @@ ${analytics.securitySchemes.length > 0 ?
 
 ## Method Distribution
 ${Object.entries(analytics.methodDistribution)
-  .sort(([,a], [,b]) => b - a)
-  .map(([method, count]) => `- **${method}:** ${count} endpoints (${((count / analytics.totalEndpoints) * 100).toFixed(1)}%)`)
+  .sort(([,a], [,b]) => (b as number) - (a as number))
+  .map(([method, count]) => `- **${method}:** ${count} endpoints (${(((count as number) / analytics.totalEndpoints) * 100).toFixed(1)}%)`)
   .join('\n')}
 
 ## Complexity Distribution
 ${Object.entries(analytics.complexityDistribution)
-  .map(([complexity, count]) => `- **${complexity.charAt(0).toUpperCase() + complexity.slice(1)}:** ${count} endpoints (${((count / analytics.totalEndpoints) * 100).toFixed(1)}%)`)
+  .map(([complexity, count]) => `- **${complexity.charAt(0).toUpperCase() + complexity.slice(1)}:** ${count} endpoints (${(((count as number) / analytics.totalEndpoints) * 100).toFixed(1)}%)`)
   .join('\n')}
 
 ## Response Code Distribution
 ${Object.entries(analytics.responseCodeDistribution)
-  .sort(([,a], [,b]) => b - a)
+  .sort(([,a], [,b]) => (b as number) - (a as number))
   .slice(0, 10)
   .map(([code, count]) => `- **${code}:** ${count} endpoints`)
   .join('\n')}
 
 ## Tag Distribution (Top 10)
 ${Object.entries(analytics.tagDistribution)
-  .sort(([,a], [,b]) => b - a)
+  .sort(([,a], [,b]) => (b as number) - (a as number))
   .slice(0, 10)
   .map(([tag, count]) => `- **${tag}:** ${count} endpoints`)
   .join('\n')}`;

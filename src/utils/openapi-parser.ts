@@ -1,5 +1,5 @@
 import yaml from 'js-yaml';
-import { OpenAPISpec, EndpointData, Operation, Parameter, Response, RequestBody } from '../types/openapi';
+import { OpenAPISpec, EndpointData, Operation, Parameter, Response, RequestBody } from '../types/openapi.js';
 
 export class OpenAPIParser {
   private spec: OpenAPISpec | null = null;
@@ -325,7 +325,7 @@ export class OpenAPIParser {
         const operation = pathItem[method as keyof typeof pathItem] as Operation;
         if (!operation) return;
 
-        const parameters = this.extractParameters(operation.parameters || [], pathItem.parameters || []);
+        const parameters = this.extractParameters((operation as any).parameters || [], (pathItem as any).parameters || []);
         const pathSegments = path.split('/').filter(Boolean);
         const hasPathParams = path.includes('{');
         const hasQueryParams = parameters.some(p => p.in === 'query');

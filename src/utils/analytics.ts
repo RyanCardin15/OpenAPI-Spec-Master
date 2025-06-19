@@ -1,4 +1,4 @@
-import { EndpointData, AnalyticsData } from '../types/openapi';
+import { EndpointData, AnalyticsData } from '../types/openapi.js';
 
 export function generateAnalytics(endpoints: EndpointData[]): AnalyticsData {
   const methodDistribution: { [method: string]: number } = {};
