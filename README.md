@@ -13,8 +13,10 @@ A powerful OpenAPI specification visualizer with advanced filtering, analytics, 
 ### 🤖 MCP Server Integration
 - **Dual Transport Support**: Both stdio and HTTP transport options
 - **AI Client Connectivity**: Connect to Claude Desktop, Cursor, and other MCP-compatible clients
-- **8 Powerful Tools**: Load specs, search endpoints, generate code, validate design, and more
-- **Multi-language Code Generation**: Generate examples in cURL, JavaScript, Python, TypeScript
+- **16 Powerful Tools**: Comprehensive suite for API analysis, development, validation, and optimization
+- **Advanced Schema Analysis**: Deep property searching, dependency tracking, and evolution analysis
+- **Code Generation**: TypeScript types, mock data, and multi-language examples
+- **Security & Validation**: Authentication analysis, example validation, and design recommendations
 - **Real-time Analysis**: Get instant API insights through your AI conversations
 - **Streaming Support**: Server-sent events for real-time updates (HTTP transport)
 
@@ -140,26 +142,78 @@ curl "http://localhost:3001/api/endpoints?query=user&method=GET&limit=10"
 
 ## MCP Tools Available
 
-### Core Functions
-- `load_openapi_spec` - Load and parse OpenAPI specifications
+### Core Functions (4 tools)
+- `load_openapi_spec` - Load and parse OpenAPI specifications from multiple sources
 - `get_api_overview` - Get comprehensive API overview and statistics
 - `search_endpoints` - Search and filter endpoints with advanced criteria
 - `get_endpoint_details` - Get detailed information about specific endpoints
 
-### Advanced Features
-- `generate_code_examples` - Generate code examples in multiple languages
+### Development Tools (3 tools)
+- `generate_code_examples` - Generate code examples in multiple programming languages
+- `generate_typescript_types` - Convert OpenAPI schemas to TypeScript interfaces and types
+- `generate_mock_data` - Generate realistic mock data based on OpenAPI schemas
+
+### Analysis & Validation (5 tools)
+- `search_request_body_properties` - Deep search through request body schemas for properties
+- `find_schema_dependencies` - Trace schema references and dependencies throughout the API
+- `validate_request_examples` - Validate that request/response examples match their schemas
 - `get_api_analytics` - Comprehensive API analytics and insights
 - `validate_api_design` - API design validation with recommendations
-- `export_documentation` - Export documentation in various formats
+
+### Security & Optimization (3 tools)
+- `extract_auth_patterns` - Analyze authentication and authorization patterns across the API
+- `find_unused_schemas` - Identify schemas that are defined but never referenced
+- `analyze_schema_evolution` - Analyze how schemas might evolve and suggest versioning strategies
+
+### Documentation (1 tool)
+- `export_documentation` - Export API documentation in various formats
+
+## 🔥 New Advanced Capabilities
+
+The latest version introduces 8 powerful new tools that dramatically expand analysis capabilities:
+
+### 🔍 Deep Schema Analysis
+- **Property Search**: Find specific properties across all request/response schemas
+- **Dependency Mapping**: Understand how schemas relate and depend on each other
+- **Evolution Analysis**: Assess how schemas might change and plan versioning strategies
+
+### 🛡️ Security & Quality Assurance
+- **Auth Pattern Analysis**: Comprehensive security scheme analysis and recommendations
+- **Example Validation**: Ensure all documented examples actually match their schemas
+- **Unused Schema Detection**: Clean up APIs by finding orphaned schema definitions
+
+### ⚡ Developer Productivity
+- **TypeScript Generation**: Auto-generate type-safe interfaces from OpenAPI schemas
+- **Smart Mock Data**: Context-aware mock data generation that understands field semantics
+- **Advanced Code Examples**: Multi-language code generation with proper typing
+
+These tools work seamlessly with AI clients to provide unprecedented insight into API design, helping developers build better, more maintainable APIs.
 
 ## Usage Examples with AI Clients
 
 Once connected to Claude Desktop or Cursor, you can use prompts like:
 
+### Core Operations
 - "Load this OpenAPI spec and give me an overview: [paste spec]"
 - "Search for all POST endpoints in the user management section"
+- "Get detailed information about the GET /users/{id} endpoint"
+
+### Development & Code Generation
 - "Generate a Python example for the GET /users/{id} endpoint"
-- "Analyze the API design and suggest improvements"
+- "Generate TypeScript interfaces for all schemas in this API"
+- "Create realistic mock data for the User schema"
+
+### Advanced Analysis
+- "Find all properties named 'email' in request bodies"
+- "Show me the schema dependencies for the User model"
+- "Validate all examples against their schemas"
+- "Analyze the authentication patterns used in this API"
+- "Find any unused schemas that could be cleaned up"
+
+### Optimization & Planning
+- "Analyze how the User schema might evolve over time"
+- "Get comprehensive analytics about this API's design"
+- "Validate the API design and suggest improvements"
 - "Export the documentation in markdown format"
 
 ## Supported Formats

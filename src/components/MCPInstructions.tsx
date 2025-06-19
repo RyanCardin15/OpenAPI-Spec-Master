@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Copy, CheckCircle, Terminal, Settings, Zap, Code, FileText, Globe, Server, ChevronDown, ChevronUp, Search, BarChart3, Shield, Download, Wrench, Eye, Package } from 'lucide-react';
+import { X, Copy, CheckCircle, Terminal, Settings, Zap, Code, FileText, Globe, Server, ChevronDown, ChevronUp, Search, BarChart3, Shield, Download, Wrench, Eye, Package, Database, GitBranch, CheckSquare, Key, Shuffle, Trash2, TrendingUp } from 'lucide-react';
 
 interface MCPInstructionsProps {
   isOpen: boolean;
@@ -178,7 +178,7 @@ curl -X POST http://localhost:3001/mcp/execute \\
       title: 'Code Examples',
       description: 'Generate code examples in multiple programming languages',
       icon: Code,
-      category: 'advanced',
+      category: 'development',
       color: 'indigo',
       features: ['cURL', 'JavaScript', 'Python', 'TypeScript']
     },
@@ -187,7 +187,7 @@ curl -X POST http://localhost:3001/mcp/execute \\
       title: 'API Analytics',
       description: 'Comprehensive analytics and insights about the API',
       icon: BarChart3,
-      category: 'advanced',
+      category: 'analysis',
       color: 'pink',
       features: ['Distributions', 'Complexity analysis', 'Security coverage']
     },
@@ -196,7 +196,7 @@ curl -X POST http://localhost:3001/mcp/execute \\
       title: 'Design Validation',
       description: 'Analyze API design and provide improvement recommendations',
       icon: Shield,
-      category: 'advanced',
+      category: 'analysis',
       color: 'emerald',
       features: ['Security validation', 'Documentation check', 'Best practices']
     },
@@ -205,9 +205,81 @@ curl -X POST http://localhost:3001/mcp/execute \\
       title: 'Export Documentation',
       description: 'Export API documentation in various formats',
       icon: Download,
-      category: 'advanced',
+      category: 'documentation',
       color: 'red',
       features: ['Markdown', 'JSON', 'Summary', 'Code examples']
+    },
+    {
+      name: 'search_request_body_properties',
+      title: 'Search Properties',
+      description: 'Deep search through request body schemas for specific properties and patterns',
+      icon: Database,
+      category: 'analysis',
+      color: 'cyan',
+      features: ['Property search', 'Type filtering', 'Regex patterns', 'Nested traversal']
+    },
+    {
+      name: 'generate_typescript_types',
+      title: 'TypeScript Types',
+      description: 'Generate TypeScript interfaces and types from OpenAPI schemas',
+      icon: Code,
+      category: 'development',
+      color: 'blue',
+      features: ['Interface generation', 'Validation decorators', 'Request/response types', 'Export formats']
+    },
+    {
+      name: 'find_schema_dependencies',
+      title: 'Schema Dependencies',
+      description: 'Trace and analyze schema references and dependencies throughout the API',
+      icon: GitBranch,
+      category: 'analysis',
+      color: 'violet',
+      features: ['Dependency trees', 'Circular detection', 'Impact analysis', 'Reference mapping']
+    },
+    {
+      name: 'validate_request_examples',
+      title: 'Validate Examples',
+      description: 'Validate that request/response examples match their schemas',
+      icon: CheckSquare,
+      category: 'validation',
+      color: 'green',
+      features: ['Schema validation', 'Type checking', 'Constraint validation', 'Strict mode']
+    },
+    {
+      name: 'extract_auth_patterns',
+      title: 'Auth Patterns',
+      description: 'Analyze and extract authentication and authorization patterns across the API',
+      icon: Key,
+      category: 'security',
+      color: 'amber',
+      features: ['Security schemes', 'OAuth analysis', 'Scope mapping', 'Recommendations']
+    },
+    {
+      name: 'generate_mock_data',
+      title: 'Mock Data Generator',
+      description: 'Generate realistic mock data based on OpenAPI schemas',
+      icon: Shuffle,
+      category: 'development',
+      color: 'teal',
+      features: ['Realistic data', 'Context-aware', 'Multiple formats', 'Constraint-based']
+    },
+    {
+      name: 'find_unused_schemas',
+      title: 'Unused Schemas',
+      description: 'Identify schemas that are defined but never referenced in the API',
+      icon: Trash2,
+      category: 'optimization',
+      color: 'rose',
+      features: ['Reference analysis', 'Cleanup suggestions', 'Usage percentage', 'Indirect refs']
+    },
+    {
+      name: 'analyze_schema_evolution',
+      title: 'Schema Evolution',
+      description: 'Analyze how schemas might evolve and suggest versioning strategies',
+      icon: TrendingUp,
+      category: 'planning',
+      color: 'purple',
+      features: ['Breaking change risk', 'Extensibility assessment', 'Versioning strategy', 'Evolution recommendations']
     }
   ];
 
@@ -220,7 +292,12 @@ curl -X POST http://localhost:3001/mcp/execute \\
       indigo: 'bg-indigo-500 text-white',
       pink: 'bg-pink-500 text-white',
       emerald: 'bg-emerald-500 text-white',
-      red: 'bg-red-500 text-white'
+      red: 'bg-red-500 text-white',
+      cyan: 'bg-cyan-500 text-white',
+      violet: 'bg-violet-500 text-white',
+      amber: 'bg-amber-500 text-white',
+      teal: 'bg-teal-500 text-white',
+      rose: 'bg-rose-500 text-white'
     };
     return colors[color as keyof typeof colors] || 'bg-gray-500 text-white';
   };
@@ -234,13 +311,24 @@ curl -X POST http://localhost:3001/mcp/execute \\
       indigo: 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20',
       pink: 'border-pink-200 dark:border-pink-800 bg-pink-50 dark:bg-pink-900/20',
       emerald: 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20',
-      red: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+      red: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20',
+      cyan: 'border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-900/20',
+      violet: 'border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20',
+      amber: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20',
+      teal: 'border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20',
+      rose: 'border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20'
     };
     return colors[color as keyof typeof colors] || 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/20';
   };
 
   const coreTools = mcpTools.filter(tool => tool.category === 'core');
-  const advancedTools = mcpTools.filter(tool => tool.category === 'advanced');
+  const developmentTools = mcpTools.filter(tool => tool.category === 'development');
+  const analysisTools = mcpTools.filter(tool => tool.category === 'analysis');
+  const validationTools = mcpTools.filter(tool => tool.category === 'validation');
+  const securityTools = mcpTools.filter(tool => tool.category === 'security');
+  const optimizationTools = mcpTools.filter(tool => tool.category === 'optimization');
+  const planningTools = mcpTools.filter(tool => tool.category === 'planning');
+  const documentationTools = mcpTools.filter(tool => tool.category === 'documentation');
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -310,7 +398,7 @@ curl -X POST http://localhost:3001/mcp/execute \\
                   Available MCP Tools
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  8 powerful tools for comprehensive OpenAPI analysis and exploration
+                  16 powerful tools for comprehensive OpenAPI analysis and exploration
                 </p>
               </div>
             </div>
@@ -368,17 +456,176 @@ curl -X POST http://localhost:3001/mcp/execute \\
               </div>
             </div>
 
-            {/* Advanced Tools */}
-            <div>
+            {/* Development Tools */}
+            <div className="mb-8">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Advanced Features</h4>
-                <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full font-medium">
-                  {advancedTools.length} tools
+                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Development Tools</h4>
+                <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs rounded-full font-medium">
+                  {developmentTools.length} tools
                 </span>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
-                {advancedTools.map((tool) => {
+                {developmentTools.map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <div
+                      key={tool.name}
+                      className={`border rounded-xl p-5 hover:shadow-lg transition-all duration-200 ${getBorderColorClasses(tool.color)}`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={`p-3 rounded-lg ${getColorClasses(tool.color)} shadow-sm`}>
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h5 className="font-semibold text-gray-900 dark:text-white">
+                              {tool.title}
+                            </h5>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            {tool.description}
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {tool.features.map((feature, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded border border-gray-200 dark:border-gray-600"
+                              >
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                            <code className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                              {tool.name}
+                            </code>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Analysis & Validation Tools */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Analysis & Validation</h4>
+                <span className="px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 text-xs rounded-full font-medium">
+                  {[...analysisTools, ...validationTools].length} tools
+                </span>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {[...analysisTools, ...validationTools].map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <div
+                      key={tool.name}
+                      className={`border rounded-xl p-5 hover:shadow-lg transition-all duration-200 ${getBorderColorClasses(tool.color)}`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={`p-3 rounded-lg ${getColorClasses(tool.color)} shadow-sm`}>
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h5 className="font-semibold text-gray-900 dark:text-white">
+                              {tool.title}
+                            </h5>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            {tool.description}
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {tool.features.map((feature, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded border border-gray-200 dark:border-gray-600"
+                              >
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                            <code className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                              {tool.name}
+                            </code>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Security & Optimization Tools */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Security & Optimization</h4>
+                <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded-full font-medium">
+                  {[...securityTools, ...optimizationTools, ...planningTools].length} tools
+                </span>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {[...securityTools, ...optimizationTools, ...planningTools].map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <div
+                      key={tool.name}
+                      className={`border rounded-xl p-5 hover:shadow-lg transition-all duration-200 ${getBorderColorClasses(tool.color)}`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={`p-3 rounded-lg ${getColorClasses(tool.color)} shadow-sm`}>
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h5 className="font-semibold text-gray-900 dark:text-white">
+                              {tool.title}
+                            </h5>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            {tool.description}
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {tool.features.map((feature, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded border border-gray-200 dark:border-gray-600"
+                              >
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                            <code className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                              {tool.name}
+                            </code>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Documentation Tools */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Documentation</h4>
+                <span className="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-xs rounded-full font-medium">
+                  {documentationTools.length} tools
+                </span>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {documentationTools.map((tool) => {
                   const Icon = tool.icon;
                   return (
                     <div
@@ -430,11 +677,11 @@ curl -X POST http://localhost:3001/mcp/execute \\
                   </div>
                   <div>
                     <h5 className="font-medium text-gray-900 dark:text-white">Ready to Use</h5>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">All 8 tools available once connected</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">All 16 tools available once connected</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">8</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">16</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">MCP Tools</div>
                 </div>
               </div>
@@ -449,13 +696,30 @@ curl -X POST http://localhost:3001/mcp/execute \\
             <div className="space-y-4">
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-900 dark:text-white mb-2">Example Prompts for Claude/Cursor:</h4>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                  <li>• "Load this OpenAPI spec and give me an overview: [paste spec]"</li>
-                  <li>• "Search for all POST endpoints in the user management section"</li>
-                  <li>• "Generate a Python example for the GET /users/&#123;id&#125; endpoint"</li>
-                  <li>• "Analyze the API design and suggest improvements"</li>
-                  <li>• "Export the documentation in markdown format"</li>
-                </ul>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Core Operations:</h5>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li>• "Load this OpenAPI spec and give me an overview: [paste spec]"</li>
+                      <li>• "Search for all POST endpoints in the user management section"</li>
+                      <li>• "Generate a Python example for the GET /users/&#123;id&#125; endpoint"</li>
+                      <li>• "Export the documentation in markdown format"</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Advanced Analysis:</h5>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <li>• "Find all properties named 'email' in request bodies"</li>
+                      <li>• "Generate TypeScript types for all schemas"</li>
+                      <li>• "Show me the schema dependencies for the User model"</li>
+                      <li>• "Validate all examples against their schemas"</li>
+                      <li>• "Analyze the authentication patterns used"</li>
+                      <li>• "Generate mock data for the Product schema"</li>
+                      <li>• "Find unused schemas in the API"</li>
+                      <li>• "Analyze how the User schema might evolve"</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

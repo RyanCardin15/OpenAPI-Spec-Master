@@ -202,6 +202,197 @@ class OpenAPIExplorerMCPServer {
               },
             },
           },
+          {
+            name: 'search_request_body_properties',
+            description: 'Deep search through request body schemas to find specific properties, types, or patterns',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                propertyName: {
+                  type: 'string',
+                  description: 'Name of the property to search for (supports partial matches)',
+                },
+                propertyType: {
+                  type: 'string',
+                  description: 'Type of property to search for (string, number, boolean, array, object)',
+                },
+                schemaPattern: {
+                  type: 'string',
+                  description: 'Regex pattern to match against schema descriptions or names',
+                },
+                required: {
+                  type: 'boolean',
+                  description: 'Filter by whether the property is required',
+                },
+                methods: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Limit search to specific HTTP methods',
+                },
+              },
+            },
+          },
+          {
+            name: 'generate_typescript_types',
+            description: 'Generate TypeScript interfaces and types from OpenAPI schemas',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                schemaName: {
+                  type: 'string',
+                  description: 'Specific schema name to generate types for (optional - generates all if not provided)',
+                },
+                includeRequestBodies: {
+                  type: 'boolean',
+                  description: 'Include request body types',
+                  default: true,
+                },
+                includeResponses: {
+                  type: 'boolean',
+                  description: 'Include response types',
+                  default: true,
+                },
+                exportFormat: {
+                  type: 'string',
+                  enum: ['individual', 'merged'],
+                  description: 'Export as individual interfaces or merged into one file',
+                  default: 'individual',
+                },
+                addValidation: {
+                  type: 'boolean',
+                  description: 'Add validation decorators (useful for class-validator)',
+                  default: false,
+                },
+              },
+            },
+          },
+          {
+            name: 'find_schema_dependencies',
+            description: 'Trace and analyze schema references and dependencies throughout the API',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                schemaName: {
+                  type: 'string',
+                  description: 'Schema to analyze dependencies for',
+                },
+                direction: {
+                  type: 'string',
+                  enum: ['dependencies', 'dependents', 'both'],
+                  description: 'Find what this schema depends on, what depends on it, or both',
+                  default: 'both',
+                },
+                depth: {
+                  type: 'number',
+                  description: 'Maximum depth of dependency traversal',
+                  default: 5,
+                },
+              },
+              required: ['schemaName'],
+            },
+          },
+          {
+            name: 'validate_request_examples',
+            description: 'Validate that request/response examples match their schemas',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                endpoint: {
+                  type: 'string',
+                  description: 'Specific endpoint to validate (method:path format, e.g., "POST:/users")',
+                },
+                strictMode: {
+                  type: 'boolean',
+                  description: 'Use strict validation (fail on additional properties)',
+                  default: false,
+                },
+              },
+            },
+          },
+          {
+            name: 'extract_auth_patterns',
+            description: 'Analyze and extract authentication and authorization patterns across the API',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                includeEndpointMapping: {
+                  type: 'boolean',
+                  description: 'Include mapping of which endpoints use which auth methods',
+                  default: true,
+                },
+                analyzeScopes: {
+                  type: 'boolean',
+                  description: 'Analyze OAuth scopes and permissions',
+                  default: true,
+                },
+              },
+            },
+          },
+          {
+            name: 'generate_mock_data',
+            description: 'Generate realistic mock data based on OpenAPI schemas',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                schemaName: {
+                  type: 'string',
+                  description: 'Schema to generate mock data for',
+                },
+                endpoint: {
+                  type: 'string',
+                  description: 'Generate mock data for specific endpoint (method:path format)',
+                },
+                count: {
+                  type: 'number',
+                  description: 'Number of mock items to generate',
+                  default: 3,
+                },
+                realistic: {
+                  type: 'boolean',
+                  description: 'Generate realistic data based on field names and types',
+                  default: true,
+                },
+                format: {
+                  type: 'string',
+                  enum: ['json', 'javascript', 'typescript'],
+                  description: 'Output format for mock data',
+                  default: 'json',
+                },
+              },
+            },
+          },
+          {
+            name: 'find_unused_schemas',
+            description: 'Identify schemas that are defined but never referenced in the API',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                includeIndirectReferences: {
+                  type: 'boolean',
+                  description: 'Check for indirect references through other schemas',
+                  default: true,
+                },
+              },
+            },
+          },
+          {
+            name: 'analyze_schema_evolution',
+            description: 'Analyze how schemas might evolve and suggest versioning strategies',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                schemaName: {
+                  type: 'string',
+                  description: 'Schema to analyze for evolution patterns',
+                },
+                suggestVersioning: {
+                  type: 'boolean',
+                  description: 'Suggest versioning strategies',
+                  default: true,
+                },
+              },
+            },
+          },
         ] satisfies Tool[],
       };
     });
@@ -227,6 +418,22 @@ class OpenAPIExplorerMCPServer {
             return await this.validateAPIDesign(args);
           case 'export_documentation':
             return await this.exportDocumentation(args);
+          case 'search_request_body_properties':
+            return await this.searchRequestBodyProperties(args);
+          case 'generate_typescript_types':
+            return await this.generateTypeScriptTypes(args);
+          case 'find_schema_dependencies':
+            return await this.findSchemaDependencies(args);
+          case 'validate_request_examples':
+            return await this.validateRequestExamples(args);
+          case 'extract_auth_patterns':
+            return await this.extractAuthPatterns(args);
+          case 'generate_mock_data':
+            return await this.generateMockData(args);
+          case 'find_unused_schemas':
+            return await this.findUnusedSchemas(args);
+          case 'analyze_schema_evolution':
+            return await this.analyzeSchemaEvolution(args);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -290,7 +497,7 @@ The API specification has been loaded and is ready for exploration. You can now 
 
   private async getAPIOverview() {
     if (!this.currentSpec || !this.currentEndpoints.length) {
-      throw new Error('No OpenAPI specification loaded. Please load a spec first using load_openapi_spec.');
+      throw new Error('No OpenAPI specification loaded. Please load a spec first.');
     }
 
     const analytics = generateAnalytics(this.currentEndpoints);
@@ -893,6 +1100,1016 @@ ${Object.entries(analytics.complexityDistribution)
         },
       ],
     };
+  }
+
+  private async searchRequestBodyProperties(args: any) {
+    if (!this.currentSpec) {
+      return {
+        content: [{ type: 'text', text: 'No OpenAPI specification loaded. Please load a spec first.' }],
+        isError: true,
+      };
+    }
+
+    const { propertyName, propertyType, schemaPattern, required, methods } = args;
+    const results: any[] = [];
+
+    // Helper function to search properties in a schema
+    const searchInSchema = (schema: any, path: string[] = []): any[] => {
+      const matches: any[] = [];
+      
+      if (!schema || typeof schema !== 'object') return matches;
+
+      // Handle $ref
+      if (schema.$ref) {
+        const refName = schema.$ref.split('/').pop();
+        if (this.currentSpec?.components?.schemas?.[refName]) {
+          return searchInSchema(this.currentSpec.components.schemas[refName], [...path, refName]);
+        }
+        return matches;
+      }
+
+      // Search in properties
+      if (schema.properties) {
+        Object.entries(schema.properties).forEach(([propName, propSchema]: [string, any]) => {
+          const currentPath = [...path, propName];
+          const isRequired = schema.required?.includes(propName) || false;
+
+          // Check if this property matches our search criteria
+          let matches_criteria = true;
+
+          if (propertyName && !propName.toLowerCase().includes(propertyName.toLowerCase())) {
+            matches_criteria = false;
+          }
+
+          if (propertyType && propSchema.type !== propertyType) {
+            matches_criteria = false;
+          }
+
+          if (required !== undefined && isRequired !== required) {
+            matches_criteria = false;
+          }
+
+          if (schemaPattern) {
+            const regex = new RegExp(schemaPattern, 'i');
+            if (!regex.test(propSchema.description || '') && !regex.test(propName)) {
+              matches_criteria = false;
+            }
+          }
+
+          if (matches_criteria) {
+            matches.push({
+              propertyName: propName,
+              propertyType: propSchema.type || 'unknown',
+              path: currentPath.join('.'),
+              required: isRequired,
+              description: propSchema.description,
+              format: propSchema.format,
+              example: propSchema.example,
+              enum: propSchema.enum,
+              schema: propSchema
+            });
+          }
+
+          // Recursively search nested objects
+          if (propSchema.type === 'object' || propSchema.properties) {
+            matches.push(...searchInSchema(propSchema, currentPath));
+          }
+
+          // Search in array items
+          if (propSchema.type === 'array' && propSchema.items) {
+            matches.push(...searchInSchema(propSchema.items, [...currentPath, '[items]']));
+          }
+        });
+      }
+
+      // Search in oneOf, anyOf, allOf
+      ['oneOf', 'anyOf', 'allOf'].forEach(keyword => {
+        if (schema[keyword] && Array.isArray(schema[keyword])) {
+          schema[keyword].forEach((subSchema: any, index: number) => {
+            matches.push(...searchInSchema(subSchema, [...path, `${keyword}[${index}]`]));
+          });
+        }
+      });
+
+      return matches;
+    };
+
+    // Search through all endpoints with request bodies
+    this.currentEndpoints.forEach(endpoint => {
+      if (methods && !methods.includes(endpoint.method.toUpperCase())) {
+        return;
+      }
+
+      if (endpoint.requestBody?.content) {
+        Object.entries(endpoint.requestBody.content).forEach(([mediaType, content]: [string, any]) => {
+          if (content.schema) {
+            const properties = searchInSchema(content.schema);
+            if (properties.length > 0) {
+              results.push({
+                endpoint: `${endpoint.method.toUpperCase()} ${endpoint.path}`,
+                mediaType,
+                properties
+              });
+            }
+          }
+        });
+      }
+    });
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          searchCriteria: { propertyName, propertyType, schemaPattern, required, methods },
+          totalMatches: results.reduce((sum, r) => sum + r.properties.length, 0),
+          results
+        }, null, 2)
+      }],
+    };
+  }
+
+  private async generateTypeScriptTypes(args: any) {
+    if (!this.currentSpec) {
+      return {
+        content: [{ type: 'text', text: 'No OpenAPI specification loaded. Please load a spec first.' }],
+        isError: true,
+      };
+    }
+
+    const { schemaName, includeRequestBodies = true, includeResponses = true, exportFormat = 'individual', addValidation = false } = args;
+    
+    const convertSchemaToTS = (schema: any, name: string, path: string[] = []): string => {
+      if (!schema) return 'any';
+
+      // Handle $ref
+      if (schema.$ref) {
+        const refName = schema.$ref.split('/').pop();
+        return refName || 'any';
+      }
+
+      // Handle basic types
+      if (schema.type) {
+        switch (schema.type) {
+          case 'string':
+            if (schema.enum) {
+              return schema.enum.map((v: string) => `'${v}'`).join(' | ');
+            }
+            return 'string';
+          case 'number':
+          case 'integer':
+            return 'number';
+          case 'boolean':
+            return 'boolean';
+          case 'array':
+            const itemType = schema.items ? convertSchemaToTS(schema.items, '', path) : 'any';
+            return `${itemType}[]`;
+          case 'object':
+            if (schema.properties) {
+              const props = Object.entries(schema.properties).map(([propName, propSchema]: [string, any]) => {
+                const isRequired = schema.required?.includes(propName);
+                const optional = isRequired ? '' : '?';
+                const validation = addValidation ? this.generateValidationDecorator(propSchema) : '';
+                const propType = convertSchemaToTS(propSchema, propName, [...path, propName]);
+                const description = propSchema.description ? `  /** ${propSchema.description} */\n  ` : '  ';
+                return `${description}${validation}${propName}${optional}: ${propType};`;
+              }).join('\n  ');
+              return `{\n  ${props}\n}`;
+            }
+            return 'Record<string, any>';
+        }
+      }
+
+      // Handle oneOf, anyOf, allOf
+      if (schema.oneOf) {
+        return schema.oneOf.map((s: any) => convertSchemaToTS(s, '', path)).join(' | ');
+      }
+      if (schema.anyOf) {
+        return schema.anyOf.map((s: any) => convertSchemaToTS(s, '', path)).join(' | ');
+      }
+      if (schema.allOf) {
+        return schema.allOf.map((s: any) => convertSchemaToTS(s, '', path)).join(' & ');
+      }
+
+      return 'any';
+    };
+
+    const interfaces: string[] = [];
+
+    // Generate types for components/schemas
+    if (this.currentSpec.components?.schemas) {
+      Object.entries(this.currentSpec.components.schemas).forEach(([name, schema]: [string, any]) => {
+        if (schemaName && name !== schemaName) return;
+        
+        const tsType = convertSchemaToTS(schema, name);
+        const description = schema.description ? `/** ${schema.description} */\n` : '';
+        interfaces.push(`${description}export interface ${name} ${tsType}`);
+      });
+    }
+
+    // Generate types for request bodies
+    if (includeRequestBodies) {
+      this.currentEndpoints.forEach(endpoint => {
+        if (endpoint.requestBody?.content) {
+          Object.entries(endpoint.requestBody.content).forEach(([mediaType, content]: [string, any]) => {
+            if (content.schema && !content.schema.$ref) {
+              const typeName = `${endpoint.method.toUpperCase()}${endpoint.path.replace(/[^a-zA-Z0-9]/g, '')}Request`;
+              const tsType = convertSchemaToTS(content.schema, typeName);
+              interfaces.push(`export interface ${typeName} ${tsType}`);
+            }
+          });
+        }
+      });
+    }
+
+    // Generate types for responses
+    if (includeResponses) {
+      this.currentEndpoints.forEach(endpoint => {
+        Object.entries(endpoint.responses).forEach(([statusCode, response]: [string, any]) => {
+          if (response.content) {
+            Object.entries(response.content).forEach(([mediaType, content]: [string, any]) => {
+              if (content.schema && !content.schema.$ref) {
+                const typeName = `${endpoint.method.toUpperCase()}${endpoint.path.replace(/[^a-zA-Z0-9]/g, '')}Response${statusCode}`;
+                const tsType = convertSchemaToTS(content.schema, typeName);
+                interfaces.push(`export interface ${typeName} ${tsType}`);
+              }
+            });
+          }
+        });
+      });
+    }
+
+    const result = exportFormat === 'merged' 
+      ? interfaces.join('\n\n')
+      : interfaces.map(iface => `// ${iface.split(' ')[2]}.ts\n${iface}`).join('\n\n');
+
+    return {
+      content: [{
+        type: 'text',
+        text: result
+      }],
+    };
+  }
+
+  private generateValidationDecorator(schema: any): string {
+    const decorators: string[] = [];
+    
+    if (schema.type === 'string') {
+      if (schema.minLength) decorators.push(`@MinLength(${schema.minLength})`);
+      if (schema.maxLength) decorators.push(`@MaxLength(${schema.maxLength})`);
+      if (schema.pattern) decorators.push(`@Matches(/${schema.pattern}/)`);
+      if (schema.format === 'email') decorators.push('@IsEmail()');
+      if (schema.format === 'url') decorators.push('@IsUrl()');
+    }
+    
+    if (schema.type === 'number' || schema.type === 'integer') {
+      if (schema.minimum) decorators.push(`@Min(${schema.minimum})`);
+      if (schema.maximum) decorators.push(`@Max(${schema.maximum})`);
+      if (schema.type === 'integer') decorators.push('@IsInt()');
+    }
+    
+    if (schema.required) decorators.push('@IsNotEmpty()');
+    
+    return decorators.length > 0 ? decorators.join('\n  ') + '\n  ' : '';
+  }
+
+  private async findSchemaDependencies(args: any) {
+    if (!this.currentSpec || !this.currentSpec.components?.schemas) {
+      return {
+        content: [{ type: 'text', text: 'No OpenAPI specification or schemas loaded.' }],
+        isError: true,
+      };
+    }
+
+    const { schemaName, direction = 'both', depth = 5 } = args;
+    const schemas = this.currentSpec.components.schemas;
+
+    if (!schemas[schemaName]) {
+      return {
+        content: [{ type: 'text', text: `Schema '${schemaName}' not found.` }],
+        isError: true,
+      };
+    }
+
+    const findRefs = (obj: any, visited = new Set(), currentDepth = 0): string[] => {
+      if (currentDepth >= depth || !obj || typeof obj !== 'object') return [];
+      
+      const refs: string[] = [];
+      
+      if (obj.$ref && typeof obj.$ref === 'string') {
+        const refName = obj.$ref.split('/').pop();
+        if (refName && !visited.has(refName)) {
+          refs.push(refName);
+          visited.add(refName);
+          if (schemas[refName]) {
+            refs.push(...findRefs(schemas[refName], visited, currentDepth + 1));
+          }
+        }
+      }
+      
+      if (Array.isArray(obj)) {
+        obj.forEach(item => refs.push(...findRefs(item, visited, currentDepth)));
+      } else {
+        Object.values(obj).forEach(value => refs.push(...findRefs(value, visited, currentDepth)));
+      }
+      
+      return [...new Set(refs)];
+    };
+
+    const dependencies = direction === 'dependents' ? [] : findRefs(schemas[schemaName]);
+    
+    const dependents = direction === 'dependencies' ? [] : Object.entries(schemas)
+      .filter(([name]) => name !== schemaName)
+      .filter(([_, schema]) => findRefs(schema).includes(schemaName))
+      .map(([name]) => name);
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          schema: schemaName,
+          dependencies: dependencies.length > 0 ? dependencies : undefined,
+          dependents: dependents.length > 0 ? dependents : undefined,
+          dependencyTree: direction !== 'dependents' ? this.buildDependencyTree(schemaName, schemas, depth) : undefined
+        }, null, 2)
+      }],
+    };
+  }
+
+  private buildDependencyTree(schemaName: string, schemas: any, maxDepth: number, visited = new Set(), depth = 0): any {
+    if (depth >= maxDepth || visited.has(schemaName) || !schemas[schemaName]) {
+      return { name: schemaName, circular: visited.has(schemaName) };
+    }
+
+    visited.add(schemaName);
+    const schema = schemas[schemaName];
+    const refs = this.extractDirectRefs(schema);
+    
+    return {
+      name: schemaName,
+      dependencies: refs.map(ref => this.buildDependencyTree(ref, schemas, maxDepth, new Set(visited), depth + 1))
+    };
+  }
+
+  private extractDirectRefs(obj: any): string[] {
+    const refs: string[] = [];
+    
+    if (!obj || typeof obj !== 'object') return refs;
+    
+    if (obj.$ref && typeof obj.$ref === 'string') {
+      const refName = obj.$ref.split('/').pop();
+      if (refName) refs.push(refName);
+    }
+    
+    if (Array.isArray(obj)) {
+      obj.forEach(item => refs.push(...this.extractDirectRefs(item)));
+    } else {
+      Object.values(obj).forEach(value => refs.push(...this.extractDirectRefs(value)));
+    }
+    
+    return [...new Set(refs)];
+  }
+
+  private async validateRequestExamples(args: any) {
+    if (!this.currentSpec) {
+      return {
+        content: [{ type: 'text', text: 'No OpenAPI specification loaded.' }],
+        isError: true,
+      };
+    }
+
+    const { endpoint, strictMode = false } = args;
+    const results: any[] = [];
+
+    const validateExample = (example: any, schema: any, path: string): any[] => {
+      const errors: any[] = [];
+      
+      if (!schema || !example) return errors;
+
+      // Handle $ref
+      if (schema.$ref) {
+        const refName = schema.$ref.split('/').pop();
+        if (this.currentSpec?.components?.schemas?.[refName]) {
+          return validateExample(example, this.currentSpec.components.schemas[refName], path);
+        }
+        return errors;
+      }
+
+      // Type validation
+      if (schema.type) {
+        const actualType = Array.isArray(example) ? 'array' : typeof example;
+        const expectedType = schema.type === 'integer' ? 'number' : schema.type;
+        
+        if (actualType !== expectedType) {
+          errors.push({
+            path,
+            error: `Type mismatch: expected ${expectedType}, got ${actualType}`,
+            expected: expectedType,
+            actual: actualType
+          });
+        }
+
+        // Additional validations
+        if (schema.type === 'string') {
+          if (schema.minLength && example.length < schema.minLength) {
+            errors.push({ path, error: `String too short: ${example.length} < ${schema.minLength}` });
+          }
+          if (schema.maxLength && example.length > schema.maxLength) {
+            errors.push({ path, error: `String too long: ${example.length} > ${schema.maxLength}` });
+          }
+          if (schema.pattern && !new RegExp(schema.pattern).test(example)) {
+            errors.push({ path, error: `String doesn't match pattern: ${schema.pattern}` });
+          }
+          if (schema.enum && !schema.enum.includes(example)) {
+            errors.push({ path, error: `Value not in enum: ${schema.enum.join(', ')}` });
+          }
+        }
+
+        if (schema.type === 'number' || schema.type === 'integer') {
+          if (schema.minimum !== undefined && example < schema.minimum) {
+            errors.push({ path, error: `Number too small: ${example} < ${schema.minimum}` });
+          }
+          if (schema.maximum !== undefined && example > schema.maximum) {
+            errors.push({ path, error: `Number too large: ${example} > ${schema.maximum}` });
+          }
+        }
+
+        if (schema.type === 'object' && schema.properties) {
+          // Check required properties
+          if (schema.required) {
+            schema.required.forEach((reqProp: string) => {
+              if (!(reqProp in example)) {
+                errors.push({ path: `${path}.${reqProp}`, error: `Required property missing` });
+              }
+            });
+          }
+
+          // Validate properties
+          Object.entries(example).forEach(([prop, value]) => {
+            if (schema.properties[prop]) {
+              errors.push(...validateExample(value, schema.properties[prop], `${path}.${prop}`));
+            } else if (strictMode) {
+              errors.push({ path: `${path}.${prop}`, error: `Additional property not allowed in strict mode` });
+            }
+          });
+        }
+
+        if (schema.type === 'array' && schema.items) {
+          example.forEach((item: any, index: number) => {
+            errors.push(...validateExample(item, schema.items, `${path}[${index}]`));
+          });
+        }
+      }
+
+      return errors;
+    };
+
+    const endpointsToCheck = endpoint 
+      ? this.currentEndpoints.filter(ep => `${ep.method.toUpperCase()}:${ep.path}` === endpoint)
+      : this.currentEndpoints;
+
+    endpointsToCheck.forEach(ep => {
+      const endpointId = `${ep.method.toUpperCase()} ${ep.path}`;
+      
+      // Check request body examples
+      if (ep.requestBody?.content) {
+        Object.entries(ep.requestBody.content).forEach(([mediaType, content]: [string, any]) => {
+          if (content.schema && content.example) {
+            const errors = validateExample(content.example, content.schema, 'requestBody');
+            if (errors.length > 0) {
+              results.push({
+                endpoint: endpointId,
+                type: 'request',
+                mediaType,
+                errors
+              });
+            }
+          }
+        });
+      }
+
+      // Check response examples
+      Object.entries(ep.responses).forEach(([statusCode, response]: [string, any]) => {
+        if (response.content) {
+          Object.entries(response.content).forEach(([mediaType, content]: [string, any]) => {
+            if (content.schema && content.example) {
+              const errors = validateExample(content.example, content.schema, 'response');
+              if (errors.length > 0) {
+                results.push({
+                  endpoint: endpointId,
+                  type: 'response',
+                  statusCode,
+                  mediaType,
+                  errors
+                });
+              }
+            }
+          });
+        }
+      });
+    });
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          validationMode: strictMode ? 'strict' : 'lenient',
+          totalIssues: results.reduce((sum, r) => sum + r.errors.length, 0),
+          results
+        }, null, 2)
+      }],
+    };
+  }
+
+  private async extractAuthPatterns(args: any) {
+    if (!this.currentSpec) {
+      return {
+        content: [{ type: 'text', text: 'No OpenAPI specification loaded.' }],
+        isError: true,
+      };
+    }
+
+    const { includeEndpointMapping = true, analyzeScopes = true } = args;
+    
+    const authSchemes = this.currentSpec.components?.securitySchemes || {};
+    const globalSecurity = this.currentSpec.security || [];
+    
+    const analysis = {
+      securitySchemes: Object.entries(authSchemes).map(([name, scheme]: [string, any]) => ({
+        name,
+        type: scheme.type,
+        description: scheme.description,
+        details: this.extractSecurityDetails(scheme)
+      })),
+      globalSecurity: globalSecurity,
+      endpointSecurity: includeEndpointMapping ? this.analyzeEndpointSecurity() : undefined,
+      scopeAnalysis: analyzeScopes ? this.analyzeOAuthScopes(authSchemes) : undefined,
+      recommendations: this.generateSecurityRecommendations(authSchemes, globalSecurity)
+    };
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify(analysis, null, 2)
+      }],
+    };
+  }
+
+  private extractSecurityDetails(scheme: any): any {
+    const details: any = { type: scheme.type };
+    
+    switch (scheme.type) {
+      case 'apiKey':
+        details.in = scheme.in;
+        details.name = scheme.name;
+        break;
+      case 'http':
+        details.scheme = scheme.scheme;
+        details.bearerFormat = scheme.bearerFormat;
+        break;
+      case 'oauth2':
+        details.flows = scheme.flows;
+        if (scheme.flows) {
+          Object.entries(scheme.flows).forEach(([flowType, flow]: [string, any]) => {
+            if (flow.scopes) {
+              details.availableScopes = Object.keys(flow.scopes);
+            }
+          });
+        }
+        break;
+      case 'openIdConnect':
+        details.openIdConnectUrl = scheme.openIdConnectUrl;
+        break;
+    }
+    
+    return details;
+  }
+
+  private analyzeEndpointSecurity(): any[] {
+    return this.currentEndpoints.map(endpoint => ({
+      endpoint: `${endpoint.method.toUpperCase()} ${endpoint.path}`,
+      security: endpoint.security || [],
+      authRequired: (endpoint.security || []).length > 0,
+      authOptions: (endpoint.security || []).map(sec => Object.keys(sec)).flat()
+    }));
+  }
+
+  private analyzeOAuthScopes(authSchemes: any): any {
+    const oauthSchemes = Object.entries(authSchemes).filter(([_, scheme]: [string, any]) => scheme.type === 'oauth2');
+    
+    if (oauthSchemes.length === 0) return null;
+    
+    const scopeUsage: { [scope: string]: string[] } = {};
+    
+    // Analyze scope usage across endpoints
+    this.currentEndpoints.forEach(endpoint => {
+      const endpointId = `${endpoint.method.toUpperCase()} ${endpoint.path}`;
+      (endpoint.security || []).forEach(sec => {
+        Object.entries(sec).forEach(([schemeName, scopes]: [string, string[]]) => {
+          if (scopes && Array.isArray(scopes)) {
+            scopes.forEach(scope => {
+              if (!scopeUsage[scope]) scopeUsage[scope] = [];
+              scopeUsage[scope].push(endpointId);
+            });
+          }
+        });
+      });
+    });
+    
+    return {
+      totalScopes: Object.keys(scopeUsage).length,
+      scopeUsage,
+      unusedScopes: this.findUnusedOAuthScopes(oauthSchemes, scopeUsage)
+    };
+  }
+
+  private findUnusedOAuthScopes(oauthSchemes: any[], scopeUsage: { [scope: string]: string[] }): string[] {
+    const definedScopes = new Set<string>();
+    
+    oauthSchemes.forEach(([_, scheme]: [string, any]) => {
+      if (scheme.flows) {
+        Object.values(scheme.flows).forEach((flow: any) => {
+          if (flow.scopes) {
+            Object.keys(flow.scopes).forEach(scope => definedScopes.add(scope));
+          }
+        });
+      }
+    });
+    
+    const usedScopes = new Set(Object.keys(scopeUsage));
+    return Array.from(definedScopes).filter(scope => !usedScopes.has(scope));
+  }
+
+  private generateSecurityRecommendations(authSchemes: any, globalSecurity: any[]): string[] {
+    const recommendations: string[] = [];
+    
+    if (Object.keys(authSchemes).length === 0) {
+      recommendations.push('Consider adding authentication schemes to secure your API');
+    }
+    
+    if (globalSecurity.length === 0) {
+      recommendations.push('Consider setting global security requirements');
+    }
+    
+    const hasOAuth = Object.values(authSchemes).some((scheme: any) => scheme.type === 'oauth2');
+    const hasApiKey = Object.values(authSchemes).some((scheme: any) => scheme.type === 'apiKey');
+    
+    if (hasApiKey && !hasOAuth) {
+      recommendations.push('Consider implementing OAuth2 for better security than API keys alone');
+    }
+    
+    const unsecuredEndpoints = this.currentEndpoints.filter(ep => !ep.security || ep.security.length === 0);
+    if (unsecuredEndpoints.length > 0) {
+      recommendations.push(`${unsecuredEndpoints.length} endpoints have no security requirements`);
+    }
+    
+    return recommendations;
+  }
+
+  private async generateMockData(args: any) {
+    if (!this.currentSpec) {
+      return {
+        content: [{ type: 'text', text: 'No OpenAPI specification loaded.' }],
+        isError: true,
+      };
+    }
+
+    const { schemaName, endpoint, count = 3, realistic = true, format = 'json' } = args;
+    
+    const generateMockValue = (schema: any, fieldName?: string): any => {
+      if (!schema) return null;
+
+      // Handle $ref
+      if (schema.$ref) {
+        const refName = schema.$ref.split('/').pop();
+        if (this.currentSpec?.components?.schemas?.[refName]) {
+          return generateMockValue(this.currentSpec.components.schemas[refName], fieldName);
+        }
+        return null;
+      }
+
+      // Use example if available
+      if (schema.example !== undefined) {
+        return schema.example;
+      }
+
+      // Handle enum
+      if (schema.enum) {
+        return schema.enum[Math.floor(Math.random() * schema.enum.length)];
+      }
+
+      // Generate based on type
+      switch (schema.type) {
+        case 'string':
+          return this.generateStringValue(schema, fieldName, realistic);
+        case 'number':
+        case 'integer':
+          return this.generateNumberValue(schema);
+        case 'boolean':
+          return Math.random() > 0.5;
+        case 'array':
+          const arrayLength = Math.min(count, 5);
+          return Array.from({ length: arrayLength }, () => 
+            generateMockValue(schema.items, fieldName));
+        case 'object':
+          if (schema.properties) {
+            const obj: any = {};
+            Object.entries(schema.properties).forEach(([propName, propSchema]) => {
+              const isRequired = schema.required?.includes(propName);
+              if (isRequired || Math.random() > 0.3) {
+                obj[propName] = generateMockValue(propSchema, propName);
+              }
+            });
+            return obj;
+          }
+          return {};
+        default:
+          return null;
+      }
+    };
+
+    let mockData: any[] = [];
+
+    if (schemaName) {
+      const schema = this.currentSpec.components?.schemas?.[schemaName];
+      if (!schema) {
+        return {
+          content: [{ type: 'text', text: `Schema '${schemaName}' not found.` }],
+          isError: true,
+        };
+      }
+      mockData = Array.from({ length: count }, () => generateMockValue(schema));
+    } else if (endpoint) {
+      const [method, path] = endpoint.split(':');
+      const ep = this.currentEndpoints.find(e => 
+        e.method.toUpperCase() === method.toUpperCase() && e.path === path);
+      
+      if (!ep) {
+        return {
+          content: [{ type: 'text', text: `Endpoint '${endpoint}' not found.` }],
+          isError: true,
+        };
+      }
+
+      // Generate mock data for request body
+      if (ep.requestBody?.content) {
+        const content = Object.values(ep.requestBody.content)[0] as any;
+        if (content.schema) {
+          mockData = Array.from({ length: count }, () => generateMockValue(content.schema));
+        }
+      }
+    }
+
+    let output = '';
+    switch (format) {
+      case 'javascript':
+        output = `const mockData = ${JSON.stringify(mockData, null, 2)};`;
+        break;
+      case 'typescript':
+        const typeName = schemaName || 'MockData';
+        output = `const mockData: ${typeName}[] = ${JSON.stringify(mockData, null, 2)} as ${typeName}[];`;
+        break;
+      default:
+        output = JSON.stringify(mockData, null, 2);
+    }
+
+    return {
+      content: [{
+        type: 'text',
+        text: output
+      }],
+    };
+  }
+
+  private generateStringValue(schema: any, fieldName?: string, realistic = true): string {
+    if (schema.format) {
+      switch (schema.format) {
+        case 'email':
+          return realistic ? `user${Math.floor(Math.random() * 1000)}@example.com` : 'user@example.com';
+        case 'uri':
+        case 'url':
+          return 'https://example.com';
+        case 'date':
+          return new Date().toISOString().split('T')[0];
+        case 'date-time':
+          return new Date().toISOString();
+        case 'uuid':
+          return '550e8400-e29b-41d4-a716-446655440000';
+      }
+    }
+
+    if (realistic && fieldName) {
+      const lowerName = fieldName.toLowerCase();
+      if (lowerName.includes('name')) return 'John Doe';
+      if (lowerName.includes('email')) return 'john.doe@example.com';
+      if (lowerName.includes('phone')) return '+1-555-123-4567';
+      if (lowerName.includes('address')) return '123 Main St, Anytown, USA';
+      if (lowerName.includes('id')) return 'abc123';
+      if (lowerName.includes('url')) return 'https://example.com';
+    }
+
+    const minLength = schema.minLength || 1;
+    const maxLength = Math.min(schema.maxLength || 20, 50);
+    const length = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
+    
+    return 'lorem ipsum'.repeat(Math.ceil(length / 11)).substring(0, length);
+  }
+
+  private generateNumberValue(schema: any): number {
+    const min = schema.minimum || 0;
+    const max = schema.maximum || 100;
+    const value = Math.random() * (max - min) + min;
+    return schema.type === 'integer' ? Math.floor(value) : Math.round(value * 100) / 100;
+  }
+
+  private async findUnusedSchemas(args: any) {
+    if (!this.currentSpec || !this.currentSpec.components?.schemas) {
+      return {
+        content: [{ type: 'text', text: 'No OpenAPI specification or schemas loaded.' }],
+        isError: true,
+      };
+    }
+
+    const { includeIndirectReferences = true } = args;
+    const schemas = this.currentSpec.components.schemas;
+    const usedSchemas = new Set<string>();
+
+    // Find all $ref references in the spec
+    const findRefs = (obj: any): void => {
+      if (!obj || typeof obj !== 'object') return;
+      
+      if (obj.$ref && typeof obj.$ref === 'string') {
+        const refName = obj.$ref.split('/').pop();
+        if (refName) usedSchemas.add(refName);
+      }
+      
+      if (Array.isArray(obj)) {
+        obj.forEach(findRefs);
+      } else {
+        Object.values(obj).forEach(findRefs);
+      }
+    };
+
+    // Start with paths and components
+    findRefs(this.currentSpec.paths);
+    if (this.currentSpec.components) {
+      findRefs(this.currentSpec.components);
+    }
+
+    // If including indirect references, also check referenced schemas
+    if (includeIndirectReferences) {
+      let previousSize = 0;
+      while (usedSchemas.size !== previousSize) {
+        previousSize = usedSchemas.size;
+        Array.from(usedSchemas).forEach(schemaName => {
+          if (schemas[schemaName]) {
+            findRefs(schemas[schemaName]);
+          }
+        });
+      }
+    }
+
+    const allSchemas = Object.keys(schemas);
+    const unusedSchemas = allSchemas.filter(name => !usedSchemas.has(name));
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          totalSchemas: allSchemas.length,
+          usedSchemas: Array.from(usedSchemas).sort(),
+          unusedSchemas: unusedSchemas.sort(),
+          unusedCount: unusedSchemas.length,
+          usagePercentage: Math.round((usedSchemas.size / allSchemas.length) * 100)
+        }, null, 2)
+      }],
+    };
+  }
+
+  private async analyzeSchemaEvolution(args: any) {
+    if (!this.currentSpec || !this.currentSpec.components?.schemas) {
+      return {
+        content: [{ type: 'text', text: 'No OpenAPI specification or schemas loaded.' }],
+        isError: true,
+      };
+    }
+
+    const { schemaName, suggestVersioning = true } = args;
+    const schemas = this.currentSpec.components.schemas;
+
+    if (schemaName && !schemas[schemaName]) {
+      return {
+        content: [{ type: 'text', text: `Schema '${schemaName}' not found.` }],
+        isError: true,
+      };
+    }
+
+    const analyzeSchema = (name: string, schema: any) => {
+      const analysis = {
+        schemaName: name,
+        extensibility: this.assessExtensibility(schema),
+        breakingChangeRisk: this.assessBreakingChangeRisk(schema),
+        versioningStrategy: suggestVersioning ? this.suggestVersioningStrategy(schema) : undefined,
+        evolutionRecommendations: this.generateEvolutionRecommendations(schema)
+      };
+      return analysis;
+    };
+
+    if (schemaName) {
+      const analysis = analyzeSchema(schemaName, schemas[schemaName]);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(analysis, null, 2)
+        }],
+      };
+    } else {
+      const analyses = Object.entries(schemas).map(([name, schema]) => 
+        analyzeSchema(name, schema));
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            overallAnalysis: {
+              totalSchemas: analyses.length,
+              highRiskSchemas: analyses.filter(a => a.breakingChangeRisk === 'high').length,
+              recommendationsCount: analyses.reduce((sum, a) => sum + a.evolutionRecommendations.length, 0)
+            },
+            schemaAnalyses: analyses
+          }, null, 2)
+        }],
+      };
+    }
+  }
+
+  private assessExtensibility(schema: any): string {
+    let score = 0;
+    
+    if (schema.additionalProperties === true) score += 2;
+    if (schema.additionalProperties && typeof schema.additionalProperties === 'object') score += 1;
+    if (schema.oneOf || schema.anyOf) score += 2;
+    if (schema.allOf) score += 1;
+    
+    if (score >= 3) return 'high';
+    if (score >= 1) return 'medium';
+    return 'low';
+  }
+
+  private assessBreakingChangeRisk(schema: any): string {
+    let risk = 0;
+    
+    if (schema.required && schema.required.length > 0) risk += 2;
+    if (schema.additionalProperties === false) risk += 2;
+    if (schema.enum) risk += 1;
+    if (schema.pattern) risk += 1;
+    if (schema.minimum || schema.maximum) risk += 1;
+    
+    if (risk >= 4) return 'high';
+    if (risk >= 2) return 'medium';
+    return 'low';
+  }
+
+  private suggestVersioningStrategy(schema: any): any {
+    const recommendations = [];
+    
+    if (schema.required && schema.required.length > 0) {
+      recommendations.push('Consider making new fields optional to maintain backward compatibility');
+    }
+    
+    if (schema.additionalProperties === false) {
+      recommendations.push('Strict schema - consider versioning when adding new properties');
+    }
+    
+    if (schema.enum) {
+      recommendations.push('Enum values - additions are usually safe, removals require major version');
+    }
+    
+    return {
+      strategy: this.assessExtensibility(schema) === 'high' ? 'minor-version-friendly' : 'requires-careful-versioning',
+      recommendations
+    };
+  }
+
+  private generateEvolutionRecommendations(schema: any): string[] {
+    const recommendations = [];
+    
+    if (!schema.description) {
+      recommendations.push('Add comprehensive description for better documentation');
+    }
+    
+    if (schema.type === 'object' && !schema.additionalProperties) {
+      recommendations.push('Consider allowing additionalProperties for future extensibility');
+    }
+    
+    if (schema.required && schema.required.length > 3) {
+      recommendations.push('High number of required fields may make evolution difficult');
+    }
+    
+    if (!schema.example && !schema.examples) {
+      recommendations.push('Add examples to help with testing and documentation');
+    }
+    
+    return recommendations;
   }
 
   async run() {
