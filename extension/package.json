@@ -4,6 +4,10 @@
   "description": "Advanced OpenAPI specification analysis, validation, and code generation directly in VS Code",
   "version": "1.0.0",
   "publisher": "openapi-explorer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RyanCardin15/Spec-Master.git"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -22,9 +26,7 @@
     "code generation"
   ],
   "activationEvents": [
-    "onLanguage:json",
-    "onLanguage:yaml",
-    "workspaceContains:**/*.{json,yaml,yml}"
+    "*"
   ],
   "main": "./out/extension.js",
   "contributes": {

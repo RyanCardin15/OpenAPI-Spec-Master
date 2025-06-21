@@ -115,12 +115,12 @@ class AnalyticsItem extends vscode.TreeItem {
     }
 }
 
-class MetricItem extends vscode.TreeItem {
+class MetricItem extends AnalyticsItem {
     constructor(
         public readonly metric: string,
         public readonly value: number | string
     ) {
-        super(`${metric}: ${value}`, vscode.TreeItemCollapsibleState.None);
+        super(`${metric}: ${value}`, 'metric', vscode.TreeItemCollapsibleState.None);
         this.iconPath = new vscode.ThemeIcon('symbol-number');
     }
 }

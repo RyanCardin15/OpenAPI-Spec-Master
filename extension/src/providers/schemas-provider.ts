@@ -56,13 +56,13 @@ class SchemaItem extends vscode.TreeItem {
     }
 }
 
-class PropertyItem extends vscode.TreeItem {
+class PropertyItem extends SchemaItem {
     constructor(
         public readonly propertyName: string,
         public readonly property: any,
         public readonly isRequired: boolean
     ) {
-        super(propertyName, vscode.TreeItemCollapsibleState.None);
+        super(propertyName, property, vscode.TreeItemCollapsibleState.None);
         
         const type = property.type || 'unknown';
         this.description = `${type}${isRequired ? ' (required)' : ''}`;
@@ -72,6 +72,8 @@ class PropertyItem extends vscode.TreeItem {
         if (isRequired) {
             this.iconPath = new vscode.ThemeIcon('star-full', new vscode.ThemeColor('charts.red'));
         }
+        
+        this.command = undefined; // Remove the command from property items
     }
 
     private getTypeIcon(type: string): vscode.ThemeIcon {

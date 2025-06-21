@@ -75,19 +75,6 @@ export class EndpointsProvider implements vscode.TreeDataProvider<EndpointItem> 
     }
 }
 
-class TagItem extends vscode.TreeItem {
-    constructor(
-        public readonly label: string,
-        public readonly count: number,
-        public readonly collapsibleState: vscode.TreeItemCollapsibleState
-    ) {
-        super(label, collapsibleState);
-        this.tooltip = `${this.label} (${this.count} endpoints)`;
-        this.description = `${this.count} endpoints`;
-        this.iconPath = new vscode.ThemeIcon('tag');
-    }
-}
-
 class EndpointItem extends vscode.TreeItem {
     constructor(public readonly endpoint: EndpointData) {
         super(`${endpoint.method} ${endpoint.path}`, vscode.TreeItemCollapsibleState.None);
@@ -120,5 +107,33 @@ class EndpointItem extends vscode.TreeItem {
             case 'DELETE': return new vscode.ThemeIcon('trash', new vscode.ThemeColor('charts.red'));
             default: return new vscode.ThemeIcon('circle-outline');
         }
+    }
+}
+
+class TagItem extends EndpointItem {
+    constructor(
+        public readonly label: string,
+        public readonly count: number,
+        public readonly collapsibleState: vscode.TreeItemCollapsibleState
+    ) {
+        // Create a dummy endpoint for the parent constructor
+        const dummyEndpoint: EndpointData = {
+            id: `tag_${label}`,
+            path: '',
+            method: 'TAG',
+            operation: {},
+            tags: [],
+            parameters: [],
+            responses: {}
+        };
+        super(dummyEndpoint);
+        
+        // Override the label and other properties
+        this.label = label;
+        this.collapsibleState = collapsibleState;
+        this.tooltip = `${this.label} (${this.count} endpoints)`;
+        this.description = `${this.count} endpoints`;
+        this.iconPath = new vscode.ThemeIcon('tag');
+        this.command = undefined; // Remove the command from tag items
     }
 }
