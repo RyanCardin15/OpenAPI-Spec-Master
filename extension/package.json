@@ -1,0 +1,237 @@
+{
+  "name": "openapi-explorer",
+  "displayName": "OpenAPI Explorer",
+  "description": "Advanced OpenAPI specification analysis, validation, and code generation directly in VS Code",
+  "version": "1.0.0",
+  "publisher": "openapi-explorer",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "openapi",
+    "swagger",
+    "api",
+    "documentation",
+    "validation",
+    "code generation"
+  ],
+  "activationEvents": [
+    "onLanguage:json",
+    "onLanguage:yaml",
+    "workspaceContains:**/*.{json,yaml,yml}"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "openapi-explorer.loadSpec",
+        "title": "Load OpenAPI Specification",
+        "category": "OpenAPI Explorer",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "openapi-explorer.validateSpec",
+        "title": "Validate API Design",
+        "category": "OpenAPI Explorer",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "openapi-explorer.generateCode",
+        "title": "Generate Code Examples",
+        "category": "OpenAPI Explorer",
+        "icon": "$(code)"
+      },
+      {
+        "command": "openapi-explorer.showAnalytics",
+        "title": "Show API Analytics",
+        "category": "OpenAPI Explorer",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "openapi-explorer.searchEndpoints",
+        "title": "Search Endpoints",
+        "category": "OpenAPI Explorer",
+        "icon": "$(search)"
+      },
+      {
+        "command": "openapi-explorer.generateTypes",
+        "title": "Generate TypeScript Types",
+        "category": "OpenAPI Explorer",
+        "icon": "$(symbol-interface)"
+      },
+      {
+        "command": "openapi-explorer.generateMockData",
+        "title": "Generate Mock Data",
+        "category": "OpenAPI Explorer",
+        "icon": "$(database)"
+      },
+      {
+        "command": "openapi-explorer.exportDocs",
+        "title": "Export Documentation",
+        "category": "OpenAPI Explorer",
+        "icon": "$(export)"
+      },
+      {
+        "command": "openapi-explorer.showSchemaExplorer",
+        "title": "Explore Schemas",
+        "category": "OpenAPI Explorer",
+        "icon": "$(symbol-structure)"
+      },
+      {
+        "command": "openapi-explorer.findUnusedSchemas",
+        "title": "Find Unused Schemas",
+        "category": "OpenAPI Explorer",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "openapi-explorer.analyzeEvolution",
+        "title": "Analyze Schema Evolution",
+        "category": "OpenAPI Explorer",
+        "icon": "$(trending-up)"
+      },
+      {
+        "command": "openapi-explorer.extractAuthPatterns",
+        "title": "Analyze Authentication",
+        "category": "OpenAPI Explorer",
+        "icon": "$(key)"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "openapi-explorer",
+          "name": "OpenAPI Explorer",
+          "when": "openapi-explorer.hasSpec"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "openapi-explorer-container",
+          "title": "OpenAPI Explorer",
+          "icon": "$(api)"
+        }
+      ]
+    },
+    "views": {
+      "openapi-explorer-container": [
+        {
+          "id": "openapi-endpoints",
+          "name": "Endpoints",
+          "when": "openapi-explorer.hasSpec"
+        },
+        {
+          "id": "openapi-schemas",
+          "name": "Schemas",
+          "when": "openapi-explorer.hasSpec"
+        },
+        {
+          "id": "openapi-analytics",
+          "name": "Analytics",
+          "when": "openapi-explorer.hasSpec"
+        }
+      ]
+    },
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "openapi-explorer.loadSpec",
+          "when": "resourceExtname =~ /\\.(json|yaml|yml)$/",
+          "group": "openapi"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "openapi-explorer.loadSpec",
+          "when": "resourceExtname =~ /\\.(json|yaml|yml)$/",
+          "group": "openapi"
+        },
+        {
+          "command": "openapi-explorer.validateSpec",
+          "when": "openapi-explorer.hasSpec",
+          "group": "openapi"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "openapi-explorer.loadSpec",
+          "when": "true"
+        },
+        {
+          "command": "openapi-explorer.validateSpec",
+          "when": "openapi-explorer.hasSpec"
+        },
+        {
+          "command": "openapi-explorer.generateCode",
+          "when": "openapi-explorer.hasSpec"
+        },
+        {
+          "command": "openapi-explorer.showAnalytics",
+          "when": "openapi-explorer.hasSpec"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "OpenAPI Explorer",
+      "properties": {
+        "openapi-explorer.autoValidate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically validate OpenAPI specs when opened"
+        },
+        "openapi-explorer.defaultLanguage": {
+          "type": "string",
+          "enum": ["curl", "javascript", "python", "typescript"],
+          "default": "typescript",
+          "description": "Default language for code generation"
+        },
+        "openapi-explorer.showInlineHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline hints and suggestions in the editor"
+        },
+        "openapi-explorer.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable diagnostic messages for OpenAPI validation"
+        }
+      }
+    },
+    "languages": [
+      {
+        "id": "openapi",
+        "aliases": ["OpenAPI", "Swagger"],
+        "extensions": [".openapi.json", ".openapi.yaml", ".swagger.json", ".swagger.yaml"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "openapi",
+        "scopeName": "source.openapi",
+        "path": "./syntaxes/openapi.tmGrammar.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "fuse.js": "^7.0.0"
+  }
+}
