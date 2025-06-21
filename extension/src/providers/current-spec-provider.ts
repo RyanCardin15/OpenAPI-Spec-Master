@@ -199,7 +199,7 @@ export class EndpointItem extends CurrentSpecTreeItem {
         this.description = endpoint.summary || '';
         this.tooltip = `${endpoint.method} ${endpoint.path}\n${endpoint.summary || ''}\n${endpoint.description || ''}`;
         this.iconPath = this.getMethodIcon(endpoint.method);
-        this.contextValue = 'endpoint';
+        this.contextValue = 'endpointItem';
         
         if (endpoint.deprecated) {
             this.description = `${this.description} (deprecated)`;

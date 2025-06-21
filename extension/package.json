@@ -26,7 +26,10 @@
     "code generation"
   ],
   "activationEvents": [
-    "*"
+    "onLanguage:json",
+    "onLanguage:yaml",
+    "onCommand:openapi-explorer.createFolder",
+    "onView:openapi-spec-manager"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -96,6 +99,24 @@
         "title": "Export Documentation",
         "category": "OpenAPI Explorer",
         "icon": "$(export)"
+      },
+      {
+        "command": "openapi-explorer.openEnhancedView",
+        "title": "Open Enhanced View",
+        "category": "OpenAPI Explorer",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "openapi-explorer.searchEndpoints",
+        "title": "Search Endpoints",
+        "category": "OpenAPI Explorer",
+        "icon": "$(search)"
+      },
+      {
+        "command": "openapi-explorer.filterByMethod",
+        "title": "Filter by Method",
+        "category": "OpenAPI Explorer",
+        "icon": "$(filter)"
       }
     ],
     "viewsContainers": {
@@ -115,8 +136,9 @@
           "visibility": "visible"
         },
         {
-          "id": "openapi-current-spec",
-          "name": "Current Spec",
+          "id": "openapi-enhanced-spec",
+          "name": "No Spec Selected",
+          "type": "webview",
           "visibility": "visible"
         }
       ]
@@ -157,6 +179,30 @@
         {
           "command": "openapi-explorer.showAnalytics",
           "when": "openapi-explorer.hasSpec"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "openapi-explorer.refreshSpecs",
+          "when": "view == openapi-spec-manager",
+          "group": "navigation"
+        },
+        {
+          "command": "openapi-explorer.openEnhancedView",
+          "when": "view == openapi-current-spec",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "openapi-explorer.generateCode",
+          "when": "view == openapi-current-spec && viewItem == endpointItem",
+          "group": "inline"
+        },
+        {
+          "command": "openapi-explorer.searchEndpoints",
+          "when": "view == openapi-current-spec && viewItem == endpointsRoot",
+          "group": "inline"
         }
       ]
     },

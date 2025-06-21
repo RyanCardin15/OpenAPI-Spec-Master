@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import { OpenAPIParser } from './openapi-parser';
 import { SpecManagerProvider } from './providers/spec-manager-provider';
-import { CurrentSpecProvider } from './providers/current-spec-provider';
+
+import { EnhancedSpecWebviewProvider } from './providers/enhanced-spec-webview-provider';
 import { CodeGenerator } from './code-generator';
 import { ValidationEngine } from './validation-engine';
 import { DiagnosticsProvider } from './diagnostics-provider';
@@ -9,9 +10,12 @@ import { DiagnosticsProvider } from './diagnostics-provider';
 export function activate(context: vscode.ExtensionContext) {
     console.log('OpenAPI Explorer extension is now active!');
 
+    // Track current spec
+    let currentSpec: any = null;
+
     // Initialize providers
     const specManagerProvider = new SpecManagerProvider(context);
-    const currentSpecProvider = new CurrentSpecProvider();
+    const enhancedSpecWebviewProvider = new EnhancedSpecWebviewProvider(context.extensionUri);
     const validationEngine = new ValidationEngine();
     const codeGenerator = new CodeGenerator();
     const diagnosticsProvider = new DiagnosticsProvider();
@@ -22,10 +26,11 @@ export function activate(context: vscode.ExtensionContext) {
         showCollapseAll: true
     });
 
-    const currentSpecView = vscode.window.createTreeView('openapi-current-spec', {
-        treeDataProvider: currentSpecProvider,
-        showCollapseAll: true
-    });
+    // Register enhanced webview provider
+    const enhancedSpecWebview = vscode.window.registerWebviewViewProvider(
+        EnhancedSpecWebviewProvider.viewType,
+        enhancedSpecWebviewProvider
+    );
 
     // New commands for spec management
     const createFolderCommand = vscode.commands.registerCommand('openapi-explorer.createFolder', () => {
@@ -43,7 +48,8 @@ export function activate(context: vscode.ExtensionContext) {
     const openSpecCommand = vscode.commands.registerCommand('openapi-explorer.openSpec', (folderId: string, specId: string) => {
         const spec = specManagerProvider.getSpec(folderId, specId);
         if (spec) {
-            currentSpecProvider.setCurrentSpec(spec);
+            currentSpec = spec;
+            enhancedSpecWebviewProvider.setCurrentSpec(spec);
             vscode.window.showInformationMessage(`Opened: ${spec.name}`);
         }
     });
@@ -62,7 +68,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Validate current spec
     const validateCurrentSpecCommand = vscode.commands.registerCommand('openapi-explorer.validateCurrentSpec', async () => {
-        const currentSpec = currentSpecProvider.getCurrentSpec();
         if (!currentSpec?.spec) {
             vscode.window.showWarningMessage('No OpenAPI specification selected. Please select a spec first.');
             return;
@@ -109,7 +114,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Generate Code Examples
     const generateCodeCommand = vscode.commands.registerCommand('openapi-explorer.generateCode', async () => {
-        const currentSpec = currentSpecProvider.getCurrentSpec();
         if (!currentSpec?.spec) {
             vscode.window.showWarningMessage('No OpenAPI specification selected. Please select a spec first.');
             return;
@@ -186,7 +190,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Show Analytics
     const showAnalyticsCommand = vscode.commands.registerCommand('openapi-explorer.showAnalytics', async () => {
-        const currentSpec = currentSpecProvider.getCurrentSpec();
         if (!currentSpec?.spec) {
             vscode.window.showWarningMessage('No OpenAPI specification selected. Please select a spec first.');
             return;
@@ -195,9 +198,50 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage(`Analytics for ${currentSpec.name} - Feature coming soon!`);
     });
 
+    // Open Enhanced View
+    const openEnhancedViewCommand = vscode.commands.registerCommand('openapi-explorer.openEnhancedView', () => {
+        vscode.commands.executeCommand('openapi-enhanced-spec.focus');
+    });
+
+    // Search Endpoints
+    const searchEndpointsCommand = vscode.commands.registerCommand('openapi-explorer.searchEndpoints', async () => {
+        if (!currentSpec?.spec) {
+            vscode.window.showWarningMessage('No OpenAPI specification selected. Please select a spec first.');
+            return;
+        }
+
+        const searchTerm = await vscode.window.showInputBox({
+            placeHolder: 'Enter search term for endpoints...',
+            prompt: 'Search by path, summary, description, or tags'
+        });
+
+        if (searchTerm) {
+            // Focus the enhanced view and trigger search
+            vscode.commands.executeCommand('openapi-enhanced-spec.focus');
+            // The search will be handled by the webview
+        }
+    });
+
+    // Filter by Method
+    const filterByMethodCommand = vscode.commands.registerCommand('openapi-explorer.filterByMethod', async () => {
+        if (!currentSpec?.spec) {
+            vscode.window.showWarningMessage('No OpenAPI specification selected. Please select a spec first.');
+            return;
+        }
+
+        const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'];
+        const selectedMethod = await vscode.window.showQuickPick(methods, {
+            placeHolder: 'Select HTTP method to filter by'
+        });
+
+        if (selectedMethod) {
+            vscode.commands.executeCommand('openapi-enhanced-spec.focus');
+            // The filtering will be handled by the webview
+        }
+    });
+
     // Export Documentation
     const exportDocsCommand = vscode.commands.registerCommand('openapi-explorer.exportDocs', async () => {
-        const currentSpec = currentSpecProvider.getCurrentSpec();
         if (!currentSpec?.spec) {
             vscode.window.showWarningMessage('No OpenAPI specification selected. Please select a spec first.');
             return;
@@ -219,8 +263,11 @@ export function activate(context: vscode.ExtensionContext) {
         generateCodeCommand,
         showAnalyticsCommand,
         exportDocsCommand,
+        openEnhancedViewCommand,
+        searchEndpointsCommand,
+        filterByMethodCommand,
         specManagerView,
-        currentSpecView
+        enhancedSpecWebview
     );
 }
 

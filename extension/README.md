@@ -27,6 +27,14 @@ A comprehensive Visual Studio Code extension that brings advanced OpenAPI specif
 - **Mock Data**: Create realistic test data
 - **Documentation Export**: Markdown, JSON, and summary formats
 
+### 🚀 **Enhanced Spec View** *(NEW)*
+- **Advanced Search**: Fuzzy search across endpoints, summaries, descriptions, and tags
+- **Smart Filtering**: Filter by HTTP methods, tags, status codes, complexity, and security
+- **Intelligent Grouping**: Group endpoints by tags, methods, paths, or complexity
+- **Rich Analytics**: Real-time statistics with method and tag distribution
+- **Interactive UI**: Modern web-based interface with VS Code theme integration
+- **Performance Optimized**: Fast search and filtering for large specifications
+
 ### 💡 **Developer Experience**
 - **Context Menus**: Right-click actions on OpenAPI files
 - **Command Palette**: Quick access to all features
@@ -61,6 +69,8 @@ A comprehensive Visual Studio Code extension that brings advanced OpenAPI specif
 | `OpenAPI Explorer: Generate TypeScript Types` | Create type definitions |
 | `OpenAPI Explorer: Generate Mock Data` | Create test data |
 | `OpenAPI Explorer: Export Documentation` | Export in various formats |
+| `OpenAPI Explorer: Open Enhanced View` | Focus the enhanced spec view panel |
+| `OpenAPI Explorer: Filter by Method` | Quick HTTP method filtering |
 
 ## Configuration
 
