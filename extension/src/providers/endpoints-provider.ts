@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 import { EndpointData } from '../openapi-parser';
-import Fuse from 'fuse.js';
+const Fuse = require('fuse.js');
 
 export class EndpointsProvider implements vscode.TreeDataProvider<EndpointItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<EndpointItem | undefined | null | void> = new vscode.EventEmitter<EndpointItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<EndpointItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private endpoints: EndpointData[] = [];
-    private fuse: Fuse<EndpointData>;
+    private fuse: any;
 
     constructor() {
         this.fuse = new Fuse([], {
@@ -29,7 +29,7 @@ export class EndpointsProvider implements vscode.TreeDataProvider<EndpointItem> 
         if (!query.trim()) return this.endpoints;
         
         const results = this.fuse.search(query);
-        return results.map(result => result.item);
+        return results.map((result: any) => result.item);
     }
 
     getTreeItem(element: EndpointItem): vscode.TreeItem {

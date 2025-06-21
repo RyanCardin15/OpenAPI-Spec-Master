@@ -1,9 +1,9 @@
 {
-  "name": "openapi-explorer",
-  "displayName": "OpenAPI Explorer",
+  "name": "openapi-spec-explorer",
+  "displayName": "OpenAPI Spec Explorer",
   "description": "Advanced OpenAPI specification analysis, validation, and code generation directly in VS Code",
-  "version": "1.0.0",
-  "publisher": "openapi-explorer",
+  "version": "1.0.1",
+  "publisher": "spec-master",
   "repository": {
     "type": "git",
     "url": "https://github.com/RyanCardin15/Spec-Master.git"
@@ -32,14 +32,50 @@
   "contributes": {
     "commands": [
       {
-        "command": "openapi-explorer.loadSpec",
-        "title": "Load OpenAPI Specification",
+        "command": "openapi-explorer.createFolder",
+        "title": "Create Spec Folder",
         "category": "OpenAPI Explorer",
-        "icon": "$(file-code)"
+        "icon": "$(folder-opened)"
       },
       {
-        "command": "openapi-explorer.validateSpec",
-        "title": "Validate API Design",
+        "command": "openapi-explorer.addSpecFromFile",
+        "title": "Add Spec from File",
+        "category": "OpenAPI Explorer",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "openapi-explorer.addSpecFromUrl",
+        "title": "Add Spec from URL",
+        "category": "OpenAPI Explorer",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "openapi-explorer.deleteSpec",
+        "title": "Delete Spec",
+        "category": "OpenAPI Explorer",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "openapi-explorer.renameSpec",
+        "title": "Rename Spec",
+        "category": "OpenAPI Explorer",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "openapi-explorer.openSpec",
+        "title": "Open Spec",
+        "category": "OpenAPI Explorer",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "openapi-explorer.refreshSpecs",
+        "title": "Refresh Specs",
+        "category": "OpenAPI Explorer",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "openapi-explorer.validateCurrentSpec",
+        "title": "Validate Current Spec",
         "category": "OpenAPI Explorer",
         "icon": "$(shield)"
       },
@@ -51,93 +87,37 @@
       },
       {
         "command": "openapi-explorer.showAnalytics",
-        "title": "Show API Analytics",
+        "title": "Show Analytics",
         "category": "OpenAPI Explorer",
         "icon": "$(graph)"
-      },
-      {
-        "command": "openapi-explorer.searchEndpoints",
-        "title": "Search Endpoints",
-        "category": "OpenAPI Explorer",
-        "icon": "$(search)"
-      },
-      {
-        "command": "openapi-explorer.generateTypes",
-        "title": "Generate TypeScript Types",
-        "category": "OpenAPI Explorer",
-        "icon": "$(symbol-interface)"
-      },
-      {
-        "command": "openapi-explorer.generateMockData",
-        "title": "Generate Mock Data",
-        "category": "OpenAPI Explorer",
-        "icon": "$(database)"
       },
       {
         "command": "openapi-explorer.exportDocs",
         "title": "Export Documentation",
         "category": "OpenAPI Explorer",
         "icon": "$(export)"
-      },
-      {
-        "command": "openapi-explorer.showSchemaExplorer",
-        "title": "Explore Schemas",
-        "category": "OpenAPI Explorer",
-        "icon": "$(symbol-structure)"
-      },
-      {
-        "command": "openapi-explorer.findUnusedSchemas",
-        "title": "Find Unused Schemas",
-        "category": "OpenAPI Explorer",
-        "icon": "$(trash)"
-      },
-      {
-        "command": "openapi-explorer.analyzeEvolution",
-        "title": "Analyze Schema Evolution",
-        "category": "OpenAPI Explorer",
-        "icon": "$(trending-up)"
-      },
-      {
-        "command": "openapi-explorer.extractAuthPatterns",
-        "title": "Analyze Authentication",
-        "category": "OpenAPI Explorer",
-        "icon": "$(key)"
       }
     ],
-    "views": {
-      "explorer": [
-        {
-          "id": "openapi-explorer",
-          "name": "OpenAPI Explorer",
-          "when": "openapi-explorer.hasSpec"
-        }
-      ]
-    },
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "openapi-explorer-container",
+          "id": "openapi-explorer-sidebar",
           "title": "OpenAPI Explorer",
-          "icon": "$(api)"
+          "icon": "$(symbol-interface)"
         }
       ]
     },
     "views": {
-      "openapi-explorer-container": [
+      "openapi-explorer-sidebar": [
         {
-          "id": "openapi-endpoints",
-          "name": "Endpoints",
-          "when": "openapi-explorer.hasSpec"
+          "id": "openapi-spec-manager",
+          "name": "Spec Manager",
+          "visibility": "visible"
         },
         {
-          "id": "openapi-schemas",
-          "name": "Schemas",
-          "when": "openapi-explorer.hasSpec"
-        },
-        {
-          "id": "openapi-analytics",
-          "name": "Analytics",
-          "when": "openapi-explorer.hasSpec"
+          "id": "openapi-current-spec",
+          "name": "Current Spec",
+          "visibility": "visible"
         }
       ]
     },

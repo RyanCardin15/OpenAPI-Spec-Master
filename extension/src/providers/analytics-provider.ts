@@ -5,7 +5,14 @@ export class AnalyticsProvider implements vscode.TreeDataProvider<AnalyticsItem>
     private _onDidChangeTreeData: vscode.EventEmitter<AnalyticsItem | undefined | null | void> = new vscode.EventEmitter<AnalyticsItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<AnalyticsItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
-    private analytics: any = {};
+    private analytics: any = {
+        totalEndpoints: 0,
+        methodDistribution: {},
+        tagDistribution: {},
+        complexityDistribution: {},
+        deprecatedCount: 0,
+        averageParametersPerEndpoint: 0
+    };
 
     updateAnalytics(endpoints: EndpointData[]): void {
         this.analytics = this.generateAnalytics(endpoints);
@@ -69,23 +76,23 @@ export class AnalyticsProvider implements vscode.TreeDataProvider<AnalyticsItem>
         switch (element.category) {
             case 'overview':
                 return Promise.resolve([
-                    new MetricItem('Total Endpoints', this.analytics.totalEndpoints),
-                    new MetricItem('Deprecated', this.analytics.deprecatedCount),
-                    new MetricItem('Avg Parameters', this.analytics.averageParametersPerEndpoint.toFixed(1))
+                    new MetricItem('Total Endpoints', this.analytics.totalEndpoints || 0),
+                    new MetricItem('Deprecated', this.analytics.deprecatedCount || 0),
+                    new MetricItem('Avg Parameters', (this.analytics.averageParametersPerEndpoint || 0).toFixed(1))
                 ]);
             
             case 'methods':
-                return Promise.resolve(Object.entries(this.analytics.methodDistribution).map(([method, count]) => 
+                return Promise.resolve(Object.entries(this.analytics.methodDistribution || {}).map(([method, count]) => 
                     new MetricItem(method, count as number)
                 ));
             
             case 'complexity':
-                return Promise.resolve(Object.entries(this.analytics.complexityDistribution).map(([complexity, count]) => 
+                return Promise.resolve(Object.entries(this.analytics.complexityDistribution || {}).map(([complexity, count]) => 
                     new MetricItem(complexity, count as number)
                 ));
             
             case 'tags':
-                return Promise.resolve(Object.entries(this.analytics.tagDistribution).map(([tag, count]) => 
+                return Promise.resolve(Object.entries(this.analytics.tagDistribution || {}).map(([tag, count]) => 
                     new MetricItem(tag, count as number)
                 ));
         }
