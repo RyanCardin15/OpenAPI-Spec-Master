@@ -7,6 +7,8 @@ export interface SpecFolder {
     specs: SpecItem[];
 }
 
+export type SpecStatus = 'unloaded' | 'loading' | 'loaded' | 'error';
+
 export interface SpecItem {
     id: string;
     name: string;
@@ -15,6 +17,9 @@ export interface SpecItem {
     url?: string;
     spec?: any;
     lastModified: string;
+    status: SpecStatus;
+    error?: string;
+    loadingProgress?: number;
 }
 
 export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem> {
@@ -116,34 +121,27 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
 
         if (!specName) return;
 
-        try {
-            const document = await vscode.workspace.openTextDocument(file);
-            const content = document.getText();
-            
-            // Parse the spec to validate it
-            const { OpenAPIParser } = await import('../openapi-parser');
-            const parser = new OpenAPIParser();
-            const spec = await parser.parseFromText(content);
+        const folder = this.folders.find(f => f.id === folderId);
+        if (!folder) return;
 
-            const specItem: SpecItem = {
-                id: Date.now().toString(),
-                name: specName,
-                source: 'file',
-                path: file.fsPath,
-                spec: spec,
-                lastModified: new Date().toISOString()
-            };
+        // Create spec item first, then try to load it
+        const specItem: SpecItem = {
+            id: Date.now().toString(),
+            name: specName,
+            source: 'file',
+            path: file.fsPath,
+            lastModified: new Date().toISOString(),
+            status: 'unloaded'
+        };
 
-            const folder = this.folders.find(f => f.id === folderId);
-            if (folder) {
-                folder.specs.push(specItem);
-                await this.saveFolders();
-                this.refresh();
-                vscode.window.showInformationMessage(`Added "${specName}" to "${folder.name}"`);
-            }
-        } catch (error) {
-            vscode.window.showErrorMessage(`Failed to load spec: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+        // Add to folder immediately
+        folder.specs.push(specItem);
+        await this.saveFolders();
+        this.refresh();
+        vscode.window.showInformationMessage(`Added "${specName}" to "${folder.name}"`);
+
+        // Try to load the spec in the background
+        this.loadSpecInBackground(folder.id, specItem.id);
     }
 
     async addSpecFromUrl(folderId: string): Promise<void> {
@@ -161,55 +159,27 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
 
         if (!specName) return;
 
-        try {
-            // Fetch the spec from URL using VS Code's built-in method
-            const https = require('https');
-            const http = require('http');
-            
-            const content = await new Promise<string>((resolve, reject) => {
-                const client = url.startsWith('https:') ? https : http;
-                const request = client.get(url, (response: any) => {
-                    if (response.statusCode !== 200) {
-                        reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
-                        return;
-                    }
-                    
-                    let data = '';
-                    response.on('data', (chunk: any) => data += chunk);
-                    response.on('end', () => resolve(data));
-                });
-                
-                request.on('error', reject);
-                request.setTimeout(10000, () => {
-                    request.destroy();
-                    reject(new Error('Request timeout'));
-                });
-            });
-            
-            // Parse the spec to validate it
-            const { OpenAPIParser } = await import('../openapi-parser');
-            const parser = new OpenAPIParser();
-            const spec = await parser.parseFromText(content);
+        const folder = this.folders.find(f => f.id === folderId);
+        if (!folder) return;
 
-            const specItem: SpecItem = {
-                id: Date.now().toString(),
-                name: specName,
-                source: 'url',
-                url: url,
-                spec: spec,
-                lastModified: new Date().toISOString()
-            };
+        // Create spec item first, then try to load it
+        const specItem: SpecItem = {
+            id: Date.now().toString(),
+            name: specName,
+            source: 'url',
+            url: url,
+            lastModified: new Date().toISOString(),
+            status: 'unloaded'
+        };
 
-            const folder = this.folders.find(f => f.id === folderId);
-            if (folder) {
-                folder.specs.push(specItem);
-                await this.saveFolders();
-                this.refresh();
-                vscode.window.showInformationMessage(`Added "${specName}" to "${folder.name}"`);
-            }
-        } catch (error) {
-            vscode.window.showErrorMessage(`Failed to load spec from URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+        // Add to folder immediately
+        folder.specs.push(specItem);
+        await this.saveFolders();
+        this.refresh();
+        vscode.window.showInformationMessage(`Added "${specName}" to "${folder.name}"`);
+
+        // Try to load the spec in the background
+        this.loadSpecInBackground(folder.id, specItem.id);
     }
 
     async deleteSpec(folderId: string, specId: string): Promise<void> {
@@ -305,68 +275,186 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
             return spec;
         }
 
-        try {
-            vscode.window.showInformationMessage(`Loading spec "${spec.name}"...`);
+        // If spec is already loading, wait for it
+        if (spec.status === 'loading') {
+            // Wait for loading to complete (max 30 seconds)
+            const maxWaitTime = 30000;
+            const checkInterval = 100;
+            let waitTime = 0;
             
-            let content: string;
-            
-            if (spec.source === 'file' && spec.path) {
-                // Load from file
-                const document = await vscode.workspace.openTextDocument(vscode.Uri.file(spec.path));
-                content = document.getText();
-            } else if (spec.source === 'url' && spec.url) {
-                // Load from URL
-                const https = require('https');
-                const http = require('http');
-                
-                content = await new Promise<string>((resolve, reject) => {
-                    const client = spec.url!.startsWith('https:') ? https : http;
-                    const request = client.get(spec.url, (response: any) => {
-                        if (response.statusCode !== 200) {
-                            reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
-                            return;
-                        }
-                        
-                        let data = '';
-                        response.on('data', (chunk: any) => data += chunk);
-                        response.on('end', () => resolve(data));
-                    });
-                    
-                    request.on('error', reject);
-                    request.setTimeout(10000, () => {
-                        request.destroy();
-                        reject(new Error('Request timeout'));
-                    });
-                });
-            } else {
-                throw new Error('No valid source path or URL found');
+            while (spec.status === 'loading' && waitTime < maxWaitTime) {
+                await new Promise(resolve => setTimeout(resolve, checkInterval));
+                waitTime += checkInterval;
             }
             
-            // Parse the spec
-            const { OpenAPIParser } = await import('../openapi-parser');
-            const parser = new OpenAPIParser();
-            const parsedSpec = await parser.parseFromText(content);
-            
-            // Update the spec with the loaded content
-            spec.spec = parsedSpec;
+            return spec.spec ? spec : null;
+        }
+
+        return this.loadSpecInBackground(folderId, specId, true);
+    }
+
+    private async loadSpecInBackground(folderId: string, specId: string, showProgress: boolean = false): Promise<SpecItem | null> {
+        const folder = this.folders.find(f => f.id === folderId);
+        if (!folder) return null;
+
+        const spec = folder.specs.find(s => s.id === specId);
+        if (!spec) return null;
+
+        // Set loading status
+        spec.status = 'loading';
+        spec.loadingProgress = 0;
+        this.refresh();
+
+        let progressReporter: vscode.Progress<{ message?: string; increment?: number }> | null = null;
+
+        try {
+            if (showProgress) {
+                await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: `Loading spec "${spec.name}"...`,
+                    cancellable: false
+                }, async (progress) => {
+                    progressReporter = progress;
+                    return this.performSpecLoading(spec, progress);
+                });
+            } else {
+                await this.performSpecLoading(spec);
+            }
+
+            // Update status and save
+            spec.status = 'loaded';
+            spec.loadingProgress = 100;
             spec.lastModified = new Date().toISOString();
+            spec.error = undefined;
             
-            // Save the updated folder structure
             await this.saveFolders();
             this.refresh();
             
-            vscode.window.showInformationMessage(`Successfully loaded "${spec.name}"`);
+            if (showProgress) {
+                vscode.window.showInformationMessage(`Successfully loaded "${spec.name}"`);
+            }
+            
             return spec;
 
         } catch (error) {
-            vscode.window.showErrorMessage(`Failed to load spec "${spec.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+            // Update status with error
+            spec.status = 'error';
+            spec.error = error instanceof Error ? error.message : 'Unknown error';
+            spec.loadingProgress = undefined;
+            
+            await this.saveFolders();
+            this.refresh();
+            
+            if (showProgress) {
+                vscode.window.showErrorMessage(`Failed to load spec "${spec.name}": ${spec.error}`);
+            }
+            
             return null;
         }
     }
 
+    private async performSpecLoading(spec: SpecItem, progress?: vscode.Progress<{ message?: string; increment?: number }>): Promise<void> {
+        let content: string;
+        
+        progress?.report({ message: 'Fetching content...', increment: 10 });
+        
+        if (spec.source === 'file' && spec.path) {
+            // Load from file
+            const document = await vscode.workspace.openTextDocument(vscode.Uri.file(spec.path));
+            content = document.getText();
+            progress?.report({ increment: 40 });
+        } else if (spec.source === 'url' && spec.url) {
+            // Load from URL with extended timeout for large specs
+            const https = require('https');
+            const http = require('http');
+            
+            content = await new Promise<string>((resolve, reject) => {
+                const client = spec.url!.startsWith('https:') ? https : http;
+                const request = client.get(spec.url, (response: any) => {
+                    if (response.statusCode !== 200) {
+                        reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+                        return;
+                    }
+                    
+                    let data = '';
+                    let receivedLength = 0;
+                    const contentLength = parseInt(response.headers['content-length'] || '0');
+                    
+                    response.on('data', (chunk: any) => {
+                        data += chunk;
+                        receivedLength += chunk.length;
+                        
+                        if (contentLength > 0 && progress) {
+                            const downloadProgress = Math.min((receivedLength / contentLength) * 30, 30);
+                            progress.report({ increment: downloadProgress });
+                        }
+                    });
+                    response.on('end', () => resolve(data));
+                });
+                
+                request.on('error', reject);
+                // Extended timeout for large specs - 60 seconds
+                request.setTimeout(60000, () => {
+                    request.destroy();
+                    reject(new Error('Request timeout (60s) - spec file may be too large'));
+                });
+            });
+            progress?.report({ increment: 40 });
+        } else {
+            throw new Error('No valid source path or URL found');
+        }
+        
+        progress?.report({ message: 'Parsing specification...', increment: 10 });
+        
+        // Parse the spec with timeout protection for large files
+        const { OpenAPIParser } = await import('../openapi-parser');
+        const parser = new OpenAPIParser();
+        
+        // Use a promise with timeout for parsing large specs
+        const parsePromise = parser.parseFromText(content);
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Parsing timeout (30s) - spec file may be too large or complex')), 30000);
+        });
+        
+        const parsedSpec = await Promise.race([parsePromise, timeoutPromise]);
+        progress?.report({ increment: 40 });
+        
+        // Update the spec with the loaded content
+        spec.spec = parsedSpec;
+    }
+
+    async retryLoadSpec(folderId: string, specId: string): Promise<void> {
+        const folder = this.folders.find(f => f.id === folderId);
+        if (!folder) return;
+
+        const spec = folder.specs.find(s => s.id === specId);
+        if (!spec) return;
+
+        // Reset spec to unloaded state
+        spec.status = 'unloaded';
+        spec.error = undefined;
+        spec.loadingProgress = undefined;
+        spec.spec = undefined;
+        
+        this.refresh();
+
+        // Try loading again in background
+        this.loadSpecInBackground(folderId, specId, true);
+    }
+
     private async loadFolders(): Promise<void> {
         const stored = this.context.globalState.get<SpecFolder[]>('openapi-spec-folders', []);
-        this.folders = stored;
+        
+        // Migrate existing specs to include status fields
+        this.folders = stored.map(folder => ({
+            ...folder,
+            specs: folder.specs.map(spec => ({
+                ...spec,
+                status: spec.status || (spec.spec ? 'loaded' : 'unloaded') as SpecStatus,
+                error: spec.error,
+                loadingProgress: spec.loadingProgress
+            }))
+        }));
     }
 
     private async saveFolders(): Promise<void> {
@@ -499,6 +587,9 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
                 ...spec,
                 // Clear the spec content since it's not in the exported config
                 spec: undefined,
+                status: 'unloaded' as SpecStatus,
+                error: undefined,
+                loadingProgress: undefined,
                 lastModified: new Date().toISOString() // Update timestamp to indicate it needs reloading
             }))
         }));
@@ -718,20 +809,74 @@ export class SpecItemTreeItem extends SpecTreeItem {
     ) {
         super(spec.name, vscode.TreeItemCollapsibleState.None);
         
-        // Show different indicators based on whether spec content is loaded
-        const isLoaded = !!spec.spec;
+        // Status indicators based on spec status
         const sourceIcon = spec.source === 'url' ? '🌐' : '📁';
-        this.description = isLoaded ? sourceIcon : `${sourceIcon} (needs loading)`;
+        let statusIcon = '';
+        let statusText = '';
         
-        this.tooltip = `${spec.name}\nSource: ${spec.source === 'url' ? spec.url : spec.path}\nLast modified: ${new Date(spec.lastModified).toLocaleString()}\nStatus: ${isLoaded ? 'Loaded' : 'Not loaded - click to load'}`;
+        switch (spec.status) {
+            case 'loaded':
+                statusIcon = '🟢';
+                statusText = 'Loaded';
+                break;
+            case 'loading':
+                statusIcon = '🟡';
+                statusText = spec.loadingProgress ? `Loading... ${spec.loadingProgress}%` : 'Loading...';
+                break;
+            case 'error':
+                statusIcon = '🔴';
+                statusText = `Error: ${spec.error || 'Unknown error'}`;
+                break;
+            case 'unloaded':
+            default:
+                statusIcon = '⚪';
+                statusText = 'Not loaded';
+                break;
+        }
         
-        // Different icon for loaded vs not loaded specs
-        this.iconPath = new vscode.ThemeIcon(isLoaded ? 'file-code' : 'file-add');
+        this.description = `${sourceIcon} ${statusIcon}`;
+        
+        this.tooltip = `${spec.name}\nSource: ${spec.source === 'url' ? spec.url : spec.path}\nStatus: ${statusText}\nLast modified: ${new Date(spec.lastModified).toLocaleString()}`;
+        
+        // Different icons based on status
+        let iconName = 'file-code';
+        switch (spec.status) {
+            case 'loaded':
+                iconName = 'file-code';
+                break;
+            case 'loading':
+                iconName = 'loading~spin';
+                break;
+            case 'error':
+                iconName = 'error';
+                break;
+            case 'unloaded':
+            default:
+                iconName = 'file-add';
+                break;
+        }
+        
+        this.iconPath = new vscode.ThemeIcon(iconName);
         this.command = {
             command: 'openapi-explorer.openSpec',
             title: 'Open Spec',
             arguments: [folderId, spec.id]
         };
-        this.contextValue = 'spec';
+        // Set context value based on status for different menu options
+        switch (spec.status) {
+            case 'error':
+                this.contextValue = 'spec-error';
+                break;
+            case 'unloaded':
+                this.contextValue = 'spec-unloaded';
+                break;
+            case 'loading':
+                this.contextValue = 'spec-loading';
+                break;
+            case 'loaded':
+            default:
+                this.contextValue = 'spec';
+                break;
+        }
     }
 } 

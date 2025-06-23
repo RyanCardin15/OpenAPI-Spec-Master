@@ -286,6 +286,12 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage(`Export documentation for ${currentSpec.name} - Feature coming soon!`);
     });
 
+    const retryLoadSpecCommand = vscode.commands.registerCommand('openapi-explorer.retryLoadSpec', (item?: any) => {
+        if (item && (item.contextValue === 'spec-error' || item.contextValue === 'spec-unloaded')) {
+            specManagerProvider.retryLoadSpec(item.folderId, item.spec.id);
+        }
+    });
+
     // Register all commands
     context.subscriptions.push(
         createFolderCommand,
@@ -300,6 +306,7 @@ export function activate(context: vscode.ExtensionContext) {
         exportSelectedItemsCommand,
         deleteFolderCommand,
         renameFolderCommand,
+        retryLoadSpecCommand,
         validateCurrentSpecCommand,
         generateCodeCommand,
         showAnalyticsCommand,

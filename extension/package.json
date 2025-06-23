@@ -2,7 +2,7 @@
   "name": "openapi-spec-explorer",
   "displayName": "OpenAPI Spec Explorer",
   "description": "Enhanced OpenAPI specification explorer with advanced visualization, code generation, and analysis features",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "publisher": "RyanCardin",
   "author": {
     "name": "Ryan Cardin",
@@ -199,6 +199,12 @@
         "title": "Rename Folder",
         "category": "OpenAPI Explorer",
         "icon": "$(edit)"
+      },
+      {
+        "command": "openapi-explorer.retryLoadSpec",
+        "title": "Retry Loading",
+        "category": "OpenAPI Explorer",
+        "icon": "$(refresh)"
       }
     ],
     "viewsContainers": {
@@ -325,6 +331,16 @@
           "command": "openapi-explorer.deleteSpec",
           "when": "view == openapi-spec-manager && viewItem == spec",
           "group": "edit@2"
+        },
+        {
+          "command": "openapi-explorer.retryLoadSpec",
+          "when": "view == openapi-spec-manager && viewItem == spec-error",
+          "group": "loading@1"
+        },
+        {
+          "command": "openapi-explorer.retryLoadSpec",
+          "when": "view == openapi-spec-manager && viewItem == spec-unloaded",
+          "group": "loading@1"
         }
       ]
     },
