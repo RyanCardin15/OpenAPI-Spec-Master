@@ -1,8 +1,8 @@
 {
   "name": "openapi-spec-explorer",
-  "displayName": "OpenAPI Spec Master",
-  "description": "🚀 Professional OpenAPI/Swagger specification analysis, validation, and code generation with advanced performance monitoring. The ultimate VS Code extension for API developers.",
-  "version": "1.0.5",
+  "displayName": "OpenAPI Spec Explorer",
+  "description": "Enhanced OpenAPI specification explorer with advanced visualization, code generation, and analysis features",
+  "version": "1.0.6",
   "publisher": "RyanCardin",
   "author": {
     "name": "Ryan Cardin",
