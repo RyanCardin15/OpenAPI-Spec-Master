@@ -1,23 +1,45 @@
 {
   "name": "openapi-spec-master",
   "private": false,
-  "version": "1.0.3",
+  "version": "2.0.0",
   "type": "module",
-  "description": "Advanced OpenAPI specification visualizer with MCP server integration",
+  "description": "🚀 Professional OpenAPI specification analyzer and MCP server. The ultimate toolkit for API developers with VS Code extension integration.",
   "keywords": [
     "openapi",
     "swagger",
     "api",
+    "rest",
     "documentation",
     "mcp",
     "claude",
-    "ai"
+    "ai",
+    "typescript",
+    "javascript",
+    "python",
+    "curl",
+    "schema",
+    "validation",
+    "code-generation",
+    "analytics",
+    "professional",
+    "vscode"
   ],
-  "author": "OpenAPI Spec Master",
+  "author": {
+    "name": "Ryan Cardin",
+    "email": "ryan@specmaster.dev",
+    "url": "https://github.com/RyanCardin15"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/RyanCardin15/Spec-Master",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RyanCardin15/openapi-spec-master.git"
+    "url": "git+https://github.com/RyanCardin15/Spec-Master.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RyanCardin15/Spec-Master/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   },
   "bin": {
     "openapi-spec-master": "dist/cli.js",
@@ -27,6 +49,7 @@
   "files": [
     "dist/",
     "README.md",
+    "CHANGELOG.md",
     "package.json"
   ],
   "scripts": {

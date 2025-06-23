@@ -1,10 +1,51 @@
-.vscode/**
-.vscode-test/**
+# Source files
 src/**
+!out/**
+
+# Development files
+tsconfig.json
+convert-logo.js
+*.vsix
+node_modules/**
 .gitignore
-.yarnrc
-vsc-extension-quickstart.md
-**/tsconfig.json
-**/.eslintrc.json
-**/*.map
-**/*.ts
+.git/**
+
+# Documentation and development
+ENHANCED_FEATURES.md
+PERFORMANCE.md
+**/*.md
+!README.md
+!CHANGELOG.md
+!LICENSE
+
+# Test files
+**/*.test.*
+test/**
+tests/**
+
+# Build artifacts
+.vscode-test/**
+coverage/**
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/**
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Environment files
+.env
+.env.*
+
+# Temporary files
+*.tmp
+*.temp
+logs/**
+
+# Source control
+.git/**
+.gitattributes

@@ -1,11 +1,30 @@
-# OpenAPI Spec Master
+# 🚀 OpenAPI Spec Master
 
 [![npm version](https://badge.fury.io/js/openapi-spec-master.svg)](https://badge.fury.io/js/openapi-spec-master)
+[![Downloads](https://img.shields.io/npm/dm/openapi-spec-master.svg)](https://www.npmjs.com/package/openapi-spec-master)
 [![NPM](https://img.shields.io/npm/l/openapi-spec-master.svg)](https://www.npmjs.com/package/openapi-spec-master)
+[![VS Code Extension](https://img.shields.io/visual-studio-marketplace/v/RyanCardin.openapi-spec-explorer)](https://marketplace.visualstudio.com/items?itemName=RyanCardin.openapi-spec-explorer)
 
-A powerful OpenAPI specification visualizer with advanced filtering, analytics, and AI-powered insights. Features Model Context Protocol (MCP) server integration with both stdio and HTTP transport options for seamless AI client connectivity.
+> **The ultimate OpenAPI specification toolkit for professional developers**
 
-**📦 [Available on NPM](https://www.npmjs.com/package/openapi-spec-master)** - Install with `npx openapi-spec-master@latest`
+A powerful, professional-grade OpenAPI specification analyzer with advanced AI integration via Model Context Protocol (MCP). Features comprehensive API analysis, code generation, and seamless integration with VS Code extension.
+
+**📦 [Available on NPM](https://www.npmjs.com/package/openapi-spec-master)** - Install with `npx openapi-spec-master@latest`  
+**🔌 [VS Code Extension](https://marketplace.visualstudio.com/items?itemName=RyanCardin.openapi-spec-explorer)** - Professional IDE integration
+
+---
+
+## ✨ **Why Choose OpenAPI Spec Master?**
+
+- 🎯 **Professional Grade**: Enterprise-ready with advanced performance optimizations
+- 🤖 **AI Integration**: Native MCP server for Claude, Cursor, and other AI tools
+- ⚡ **Lightning Fast**: Optimized for large specifications with intelligent caching
+- 🔍 **Deep Analysis**: 16 powerful tools for comprehensive API insights
+- 🛠️ **Multi-Language**: Generate code in TypeScript, JavaScript, Python, cURL, and more
+- 📊 **Rich Analytics**: Advanced filtering, grouping, and visualization capabilities
+- 🔌 **VS Code Integration**: Professional extension for seamless development workflow
+
+---
 
 ## Features
 
