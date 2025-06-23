@@ -7,6 +7,8 @@ tsconfig.json
 convert-logo.js
 *.vsix
 node_modules/**
+!node_modules/js-yaml/**
+!node_modules/argparse/**
 .gitignore
 .git/**
 
