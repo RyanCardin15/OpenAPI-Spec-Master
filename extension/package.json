@@ -2,7 +2,7 @@
   "name": "openapi-spec-explorer",
   "displayName": "OpenAPI Spec Master",
   "description": "🚀 Professional OpenAPI/Swagger specification analysis, validation, and code generation with advanced performance monitoring. The ultimate VS Code extension for API developers.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "RyanCardin",
   "author": {
     "name": "Ryan Cardin",
@@ -187,6 +187,18 @@
         "title": "Export Selected Items",
         "category": "OpenAPI Explorer",
         "icon": "$(export)"
+      },
+      {
+        "command": "openapi-explorer.deleteFolder",
+        "title": "Delete Folder",
+        "category": "OpenAPI Explorer",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "openapi-explorer.renameFolder",
+        "title": "Rename Folder",
+        "category": "OpenAPI Explorer",
+        "icon": "$(edit)"
       }
     ],
     "viewsContainers": {
@@ -293,6 +305,26 @@
           "command": "openapi-explorer.exportSelectedItems",
           "when": "view == openapi-spec-manager && viewItem == spec",
           "group": "exportImport"
+        },
+        {
+          "command": "openapi-explorer.renameFolder",
+          "when": "view == openapi-spec-manager && viewItem == folder",
+          "group": "edit@1"
+        },
+        {
+          "command": "openapi-explorer.deleteFolder",
+          "when": "view == openapi-spec-manager && viewItem == folder",
+          "group": "edit@2"
+        },
+        {
+          "command": "openapi-explorer.renameSpec",
+          "when": "view == openapi-spec-manager && viewItem == spec",
+          "group": "edit@1"
+        },
+        {
+          "command": "openapi-explorer.deleteSpec",
+          "when": "view == openapi-spec-manager && viewItem == spec",
+          "group": "edit@2"
         }
       ]
     },

@@ -257,6 +257,42 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         return folder?.specs.find(s => s.id === specId);
     }
 
+    async deleteFolder(folderId: string): Promise<void> {
+        const folder = this.folders.find(f => f.id === folderId);
+        if (!folder) return;
+
+        const confirmed = await vscode.window.showWarningMessage(
+            `Delete folder "${folder.name}" and all its specs (${folder.specs.length})?`,
+            { modal: true },
+            'Delete'
+        );
+
+        if (confirmed === 'Delete') {
+            this.folders = this.folders.filter(f => f.id !== folderId);
+            await this.saveFolders();
+            this.refresh();
+            vscode.window.showInformationMessage(`Deleted folder "${folder.name}"`);
+        }
+    }
+
+    async renameFolder(folderId: string): Promise<void> {
+        const folder = this.folders.find(f => f.id === folderId);
+        if (!folder) return;
+
+        const newName = await vscode.window.showInputBox({
+            prompt: 'Enter new folder name',
+            value: folder.name,
+            placeHolder: 'e.g., My API Project'
+        });
+
+        if (newName && newName !== folder.name) {
+            folder.name = newName;
+            await this.saveFolders();
+            this.refresh();
+            vscode.window.showInformationMessage(`Renamed folder to "${newName}"`);
+        }
+    }
+
     private async loadFolders(): Promise<void> {
         const stored = this.context.globalState.get<SpecFolder[]>('openapi-spec-folders', []);
         this.folders = stored;

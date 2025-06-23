@@ -84,6 +84,19 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    // Delete and rename commands
+    const deleteFolderCommand = vscode.commands.registerCommand('openapi-explorer.deleteFolder', (item?: any) => {
+        if (item && item.contextValue === 'folder') {
+            specManagerProvider.deleteFolder(item.folder.id);
+        }
+    });
+
+    const renameFolderCommand = vscode.commands.registerCommand('openapi-explorer.renameFolder', (item?: any) => {
+        if (item && item.contextValue === 'folder') {
+            specManagerProvider.renameFolder(item.folder.id);
+        }
+    });
+
     // Validate current spec
     const validateCurrentSpecCommand = vscode.commands.registerCommand('openapi-explorer.validateCurrentSpec', async () => {
         if (!currentSpec?.spec) {
@@ -283,6 +296,8 @@ export function activate(context: vscode.ExtensionContext) {
         exportConfigCommand,
         importConfigCommand,
         exportSelectedItemsCommand,
+        deleteFolderCommand,
+        renameFolderCommand,
         validateCurrentSpecCommand,
         generateCodeCommand,
         showAnalyticsCommand,
