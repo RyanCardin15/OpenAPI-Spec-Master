@@ -269,13 +269,29 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
     // Export/Import functionality
     async exportConfig(): Promise<void> {
         try {
+            // Export only the configuration metadata, not the actual spec content
+            const configFolders = this.folders.map(folder => ({
+                id: folder.id,
+                name: folder.name,
+                specs: folder.specs.map(spec => ({
+                    id: spec.id,
+                    name: spec.name,
+                    source: spec.source,
+                    path: spec.path,
+                    url: spec.url,
+                    lastModified: spec.lastModified
+                    // Explicitly exclude the 'spec' property to keep export lightweight
+                }))
+            }));
+
             const exportData = {
                 version: '1.0.0',
                 exportDate: new Date().toISOString(),
-                folders: this.folders
+                description: 'OpenAPI Spec Manager Configuration - Team Sharing Format',
+                folders: configFolders
             };
 
-            const defaultFileName = `openapi-spec-config-${new Date().toISOString().split('T')[0]}.json`;
+            const defaultFileName = `openapi-team-config-${new Date().toISOString().split('T')[0]}.json`;
             
             const saveUri = await vscode.window.showSaveDialog({
                 defaultUri: vscode.Uri.file(defaultFileName),
@@ -336,13 +352,13 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
 
             if (!importOptions) return;
 
-            if (importOptions.value === 'select') {
+                         if (importOptions.value === 'select') {
                 await this.selectiveImport(importData.folders);
             } else if (importOptions.value === 'replace') {
-                this.folders = importData.folders;
+                this.folders = await this.processImportedFolders(importData.folders);
                 await this.saveFolders();
                 this.refresh();
-                vscode.window.showInformationMessage('Configuration imported successfully (replaced all existing data)');
+                vscode.window.showInformationMessage('Configuration imported successfully (replaced all existing data). Specs will be loaded from their sources.');
             } else if (importOptions.value === 'merge') {
                 // Merge folders with unique IDs
                 const existingIds = new Set(this.folders.map(f => f.id));
@@ -354,15 +370,31 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
                     f.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
                 });
 
-                this.folders.push(...foldersToAdd, ...duplicateFolders);
+                const allFoldersToAdd = [...foldersToAdd, ...duplicateFolders];
+                const processedFolders = await this.processImportedFolders(allFoldersToAdd);
+                this.folders.push(...processedFolders);
                 await this.saveFolders();
                 this.refresh();
-                vscode.window.showInformationMessage('Configuration imported successfully (merged with existing data)');
+                vscode.window.showInformationMessage('Configuration imported successfully (merged with existing data). Specs will be loaded from their sources.');
             }
 
         } catch (error) {
             vscode.window.showErrorMessage(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
+    }
+
+    private async processImportedFolders(folders: SpecFolder[]): Promise<SpecFolder[]> {
+        // Process imported folders - they only contain configuration metadata, not the actual specs
+        // We need to create the folder structure but mark specs as needing to be loaded
+        return folders.map(folder => ({
+            ...folder,
+            specs: folder.specs.map(spec => ({
+                ...spec,
+                // Clear the spec content since it's not in the exported config
+                spec: undefined,
+                lastModified: new Date().toISOString() // Update timestamp to indicate it needs reloading
+            }))
+        }));
     }
 
     private async selectiveImport(importFolders: SpecFolder[]): Promise<void> {
@@ -412,10 +444,11 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         }
 
         if (foldersToImport.length > 0) {
-            this.folders.push(...foldersToImport);
+            const processedFolders = await this.processImportedFolders(foldersToImport);
+            this.folders.push(...processedFolders);
             await this.saveFolders();
             this.refresh();
-            vscode.window.showInformationMessage(`Imported ${foldersToImport.length} folder${foldersToImport.length !== 1 ? 's' : ''} successfully`);
+            vscode.window.showInformationMessage(`Imported ${foldersToImport.length} folder${foldersToImport.length !== 1 ? 's' : ''} successfully. Specs will be loaded from their sources.`);
         }
     }
 
@@ -425,39 +458,63 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
             let defaultFileName: string;
 
             if (specId && folderId) {
-                // Export single spec
+                // Export single spec configuration
                 const spec = this.getSpec(folderId, specId);
                 if (!spec) {
                     vscode.window.showErrorMessage('Spec not found');
                     return;
                 }
 
+                const configSpec = {
+                    id: spec.id,
+                    name: spec.name,
+                    source: spec.source,
+                    path: spec.path,
+                    url: spec.url,
+                    lastModified: spec.lastModified
+                };
+
                 exportData = {
                     version: '1.0.0',
                     exportDate: new Date().toISOString(),
                     exportType: 'spec',
+                    description: 'OpenAPI Spec Configuration - Team Sharing Format',
                     folders: [{
                         id: 'exported',
                         name: 'Exported Spec',
-                        specs: [spec]
+                        specs: [configSpec]
                     }]
                 };
-                defaultFileName = `${spec.name.replace(/[^a-zA-Z0-9]/g, '-')}-spec.json`;
+                defaultFileName = `${spec.name.replace(/[^a-zA-Z0-9]/g, '-')}-spec-config.json`;
             } else if (folderId) {
-                // Export single folder
+                // Export single folder configuration
                 const folder = this.folders.find(f => f.id === folderId);
                 if (!folder) {
                     vscode.window.showErrorMessage('Folder not found');
                     return;
                 }
 
+                const configFolder = {
+                    id: folder.id,
+                    name: folder.name,
+                    specs: folder.specs.map(spec => ({
+                        id: spec.id,
+                        name: spec.name,
+                        source: spec.source,
+                        path: spec.path,
+                        url: spec.url,
+                        lastModified: spec.lastModified
+                    }))
+                };
+
                 exportData = {
                     version: '1.0.0',
                     exportDate: new Date().toISOString(),
                     exportType: 'folder',
-                    folders: [folder]
+                    description: 'OpenAPI Spec Configuration - Team Sharing Format',
+                    folders: [configFolder]
                 };
-                defaultFileName = `${folder.name.replace(/[^a-zA-Z0-9]/g, '-')}-folder.json`;
+                defaultFileName = `${folder.name.replace(/[^a-zA-Z0-9]/g, '-')}-folder-config.json`;
             } else {
                 vscode.window.showErrorMessage('No item selected for export');
                 return;
