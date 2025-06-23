@@ -81,16 +81,10 @@
         "icon": "$(folder-opened)"
       },
       {
-        "command": "openapi-explorer.addSpecFromFile",
-        "title": "Add Spec from File",
+        "command": "openapi-explorer.addSpec",
+        "title": "Add Spec",
         "category": "OpenAPI Explorer",
-        "icon": "$(file-add)"
-      },
-      {
-        "command": "openapi-explorer.addSpecFromUrl",
-        "title": "Add Spec from URL",
-        "category": "OpenAPI Explorer",
-        "icon": "$(cloud-download)"
+        "icon": "$(add)"
       },
       {
         "command": "openapi-explorer.deleteSpec",

@@ -38,12 +38,8 @@ export function activate(context: vscode.ExtensionContext) {
         specManagerProvider.createFolder();
     });
 
-    const addSpecFromFileCommand = vscode.commands.registerCommand('openapi-explorer.addSpecFromFile', (folderId: string) => {
-        specManagerProvider.addSpecFromFile(folderId);
-    });
-
-    const addSpecFromUrlCommand = vscode.commands.registerCommand('openapi-explorer.addSpecFromUrl', (folderId: string) => {
-        specManagerProvider.addSpecFromUrl(folderId);
+    const addSpecCommand = vscode.commands.registerCommand('openapi-explorer.addSpec', (folderId: string) => {
+        specManagerProvider.addSpec(folderId);
     });
 
     const openSpecCommand = vscode.commands.registerCommand('openapi-explorer.openSpec', async (folderId: string, specId: string) => {
@@ -314,8 +310,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Register all commands
     context.subscriptions.push(
         createFolderCommand,
-        addSpecFromFileCommand,
-        addSpecFromUrlCommand,
+        addSpecCommand,
         openSpecCommand,
         deleteSpecCommand,
         renameSpecCommand,

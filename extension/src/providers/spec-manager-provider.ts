@@ -35,7 +35,6 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
     }
 
     refresh(): void {
-        this.loadFolders();
         this._onDidChangeTreeData.fire();
     }
 
@@ -60,12 +59,11 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         }
 
         if (element instanceof FolderTreeItem) {
-            // Show specs in the folder plus "Add Spec" options
+            // Show specs in the folder plus "Add Spec" option
             const items: SpecTreeItem[] = [];
             
-            // Add "Add Spec" options
-            items.push(new AddSpecFromFileItem(element.folder.id));
-            items.push(new AddSpecFromUrlItem(element.folder.id));
+            // Add "Add Spec" option
+            items.push(new AddSpecItem(element.folder.id));
             
             // Add existing specs
             element.folder.specs.forEach(spec => {
@@ -95,6 +93,31 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         this.folders.push(folder);
         await this.saveFolders();
         this.refresh();
+    }
+
+    async addSpec(folderId: string): Promise<void> {
+        const option = await vscode.window.showQuickPick([
+            {
+                label: '📁 Add from File',
+                description: 'Select a local OpenAPI specification file',
+                value: 'file'
+            },
+            {
+                label: '🌐 Add from URL',
+                description: 'Enter a URL to an OpenAPI specification',
+                value: 'url'
+            }
+        ], {
+            placeHolder: 'Choose how to add the OpenAPI specification'
+        });
+
+        if (!option) return;
+
+        if (option.value === 'file') {
+            await this.addSpecFromFile(folderId);
+        } else if (option.value === 'url') {
+            await this.addSpecFromUrl(folderId);
+        }
     }
 
     async addSpecFromFile(folderId: string): Promise<void> {
@@ -140,8 +163,10 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         this.refresh();
         vscode.window.showInformationMessage(`Added "${specName}" to "${folder.name}"`);
 
-        // Try to load the spec in the background
-        this.loadSpecInBackground(folder.id, specItem.id);
+        // Try to load the spec in the background after a brief delay to show the status transition
+        setTimeout(() => {
+            this.loadSpecInBackground(folder.id, specItem.id);
+        }, 100);
     }
 
     async addSpecFromUrl(folderId: string): Promise<void> {
@@ -178,8 +203,10 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         this.refresh();
         vscode.window.showInformationMessage(`Added "${specName}" to "${folder.name}"`);
 
-        // Try to load the spec in the background
-        this.loadSpecInBackground(folder.id, specItem.id);
+        // Try to load the spec in the background after a brief delay to show the status transition
+        setTimeout(() => {
+            this.loadSpecInBackground(folder.id, specItem.id);
+        }, 100);
     }
 
     async deleteSpec(folderId: string, specId: string): Promise<void> {
@@ -310,6 +337,7 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         // Set loading status
         spec.status = 'loading';
         spec.loadingProgress = 0;
+        await this.saveFolders();
         this.refresh();
 
         // Set up periodic refresh during loading
@@ -321,8 +349,6 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
             }
         }, 500); // Refresh every 500ms while loading
 
-        let progressReporter: vscode.Progress<{ message?: string; increment?: number }> | null = null;
-
         try {
             if (showProgress) {
                 await vscode.window.withProgress({
@@ -330,7 +356,6 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
                     title: `Loading spec "${spec.name}"...`,
                     cancellable: false
                 }, async (progress) => {
-                    progressReporter = progress;
                     return this.performSpecLoading(spec, progress);
                 });
             } else {
@@ -366,6 +391,9 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
             }
             
             return null;
+        } finally {
+            // Always clear the interval to prevent memory leaks
+            clearInterval(refreshInterval);
         }
     }
 
@@ -466,7 +494,7 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
             ...folder,
             specs: folder.specs.map(spec => ({
                 ...spec,
-                status: spec.status || (spec.spec ? 'loaded' : 'unloaded') as SpecStatus,
+                status: (spec.status as SpecStatus) || (spec.spec ? 'loaded' : 'unloaded'),
                 error: spec.error,
                 loadingProgress: spec.loadingProgress
             }))
@@ -785,36 +813,23 @@ export class CreateFolderItem extends SpecTreeItem {
 
 export class FolderTreeItem extends SpecTreeItem {
     constructor(public readonly folder: SpecFolder) {
-        super(folder.name, vscode.TreeItemCollapsibleState.Expanded);
+        super(folder.name, vscode.TreeItemCollapsibleState.Collapsed);
         this.iconPath = new vscode.ThemeIcon('folder');
         this.description = `${folder.specs.length} spec${folder.specs.length !== 1 ? 's' : ''}`;
         this.contextValue = 'folder';
     }
 }
 
-export class AddSpecFromFileItem extends SpecTreeItem {
+export class AddSpecItem extends SpecTreeItem {
     constructor(public readonly folderId: string) {
-        super('📁 Add from File', vscode.TreeItemCollapsibleState.None);
-        this.iconPath = new vscode.ThemeIcon('file-add');
+        super('➕ Add Spec', vscode.TreeItemCollapsibleState.None);
+        this.iconPath = new vscode.ThemeIcon('add');
         this.command = {
-            command: 'openapi-explorer.addSpecFromFile',
-            title: 'Add from File',
+            command: 'openapi-explorer.addSpec',
+            title: 'Add Spec',
             arguments: [folderId]
         };
-        this.contextValue = 'addSpecFromFile';
-    }
-}
-
-export class AddSpecFromUrlItem extends SpecTreeItem {
-    constructor(public readonly folderId: string) {
-        super('🌐 Add from URL', vscode.TreeItemCollapsibleState.None);
-        this.iconPath = new vscode.ThemeIcon('cloud-download');
-        this.command = {
-            command: 'openapi-explorer.addSpecFromUrl',
-            title: 'Add from URL',
-            arguments: [folderId]
-        };
-        this.contextValue = 'addSpecFromUrl';
+        this.contextValue = 'addSpec';
     }
 }
 
