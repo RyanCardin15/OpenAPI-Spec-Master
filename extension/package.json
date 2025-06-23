@@ -1,0 +1,310 @@
+{
+  "name": "openapi-spec-explorer",
+  "displayName": "OpenAPI Spec Explorer",
+  "description": "Advanced OpenAPI specification analysis, validation, and code generation with high-performance optimizations and real-time monitoring directly in VS Code",
+  "version": "1.0.0",
+  "publisher": "spec-master",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RyanCardin15/Spec-Master.git"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "openapi",
+    "swagger",
+    "api",
+    "documentation",
+    "validation",
+    "code generation",
+    "performance",
+    "caching",
+    "monitoring",
+    "optimization"
+  ],
+  "activationEvents": [
+    "onLanguage:json",
+    "onLanguage:yaml",
+    "onCommand:openapi-explorer.createFolder",
+    "onView:openapi-spec-manager"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "openapi-explorer.createFolder",
+        "title": "Create Spec Folder",
+        "category": "OpenAPI Explorer",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "openapi-explorer.addSpecFromFile",
+        "title": "Add Spec from File",
+        "category": "OpenAPI Explorer",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "openapi-explorer.addSpecFromUrl",
+        "title": "Add Spec from URL",
+        "category": "OpenAPI Explorer",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "openapi-explorer.deleteSpec",
+        "title": "Delete Spec",
+        "category": "OpenAPI Explorer",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "openapi-explorer.renameSpec",
+        "title": "Rename Spec",
+        "category": "OpenAPI Explorer",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "openapi-explorer.openSpec",
+        "title": "Open Spec",
+        "category": "OpenAPI Explorer",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "openapi-explorer.refreshSpecs",
+        "title": "Refresh Specs",
+        "category": "OpenAPI Explorer",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "openapi-explorer.validateCurrentSpec",
+        "title": "Validate Current Spec",
+        "category": "OpenAPI Explorer",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "openapi-explorer.generateCode",
+        "title": "Generate Code Examples",
+        "category": "OpenAPI Explorer",
+        "icon": "$(code)"
+      },
+      {
+        "command": "openapi-explorer.showAnalytics",
+        "title": "Show Analytics",
+        "category": "OpenAPI Explorer",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "openapi-explorer.exportDocs",
+        "title": "Export Documentation",
+        "category": "OpenAPI Explorer",
+        "icon": "$(export)"
+      },
+      {
+        "command": "openapi-explorer.openEnhancedView",
+        "title": "Open Enhanced View",
+        "category": "OpenAPI Explorer",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "openapi-explorer.searchEndpoints",
+        "title": "Search Endpoints",
+        "category": "OpenAPI Explorer",
+        "icon": "$(search)"
+      },
+      {
+        "command": "openapi-explorer.filterByMethod",
+        "title": "Filter by Method",
+        "category": "OpenAPI Explorer",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "openapi-enhanced.showPerformanceReport",
+        "title": "Show Performance Report",
+        "category": "OpenAPI Enhanced",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "openapi-enhanced.togglePerformanceMonitoring",
+        "title": "Toggle Performance Monitoring",
+        "category": "OpenAPI Enhanced",
+        "icon": "$(dashboard)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "openapi-explorer-sidebar",
+          "title": "OpenAPI Explorer",
+          "icon": "$(symbol-interface)"
+        }
+      ]
+    },
+    "views": {
+      "openapi-explorer-sidebar": [
+        {
+          "id": "openapi-spec-manager",
+          "name": "Spec Manager",
+          "visibility": "visible"
+        },
+        {
+          "id": "openapi-enhanced-spec",
+          "name": "No Spec Selected",
+          "type": "webview",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "openapi-explorer.loadSpec",
+          "when": "resourceExtname =~ /\\.(json|yaml|yml)$/",
+          "group": "openapi"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "openapi-explorer.loadSpec",
+          "when": "resourceExtname =~ /\\.(json|yaml|yml)$/",
+          "group": "openapi"
+        },
+        {
+          "command": "openapi-explorer.validateSpec",
+          "when": "openapi-explorer.hasSpec",
+          "group": "openapi"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "openapi-explorer.loadSpec",
+          "when": "true"
+        },
+        {
+          "command": "openapi-explorer.validateSpec",
+          "when": "openapi-explorer.hasSpec"
+        },
+        {
+          "command": "openapi-explorer.generateCode",
+          "when": "openapi-explorer.hasSpec"
+        },
+        {
+          "command": "openapi-explorer.showAnalytics",
+          "when": "openapi-explorer.hasSpec"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "openapi-explorer.refreshSpecs",
+          "when": "view == openapi-spec-manager",
+          "group": "navigation"
+        },
+        {
+          "command": "openapi-explorer.openEnhancedView",
+          "when": "view == openapi-current-spec",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "openapi-explorer.generateCode",
+          "when": "view == openapi-current-spec && viewItem == endpointItem",
+          "group": "inline"
+        },
+        {
+          "command": "openapi-explorer.searchEndpoints",
+          "when": "view == openapi-current-spec && viewItem == endpointsRoot",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "OpenAPI Explorer",
+      "properties": {
+        "openapi-explorer.autoValidate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically validate OpenAPI specs when opened"
+        },
+        "openapi-explorer.defaultLanguage": {
+          "type": "string",
+          "enum": ["curl", "javascript", "python", "typescript"],
+          "default": "typescript",
+          "description": "Default language for code generation"
+        },
+        "openapi-explorer.showInlineHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline hints and suggestions in the editor"
+        },
+        "openapi-explorer.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable diagnostic messages for OpenAPI validation"
+        },
+        "openapi-enhanced.performance.enableCaching": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable performance caching for search and filter operations"
+        },
+        "openapi-enhanced.performance.enableMonitoring": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time performance monitoring in status bar"
+        },
+        "openapi-enhanced.performance.enableLazyLoading": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable lazy loading for large datasets (>100 endpoints)"
+        },
+        "openapi-enhanced.performance.cacheSize": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum number of search results to cache",
+          "minimum": 10,
+          "maximum": 200
+        },
+        "openapi-enhanced.performance.debounceDelay": {
+          "type": "number",
+          "default": 300,
+          "description": "Debounce delay in milliseconds for search and update operations",
+          "minimum": 100,
+          "maximum": 1000
+        }
+      }
+    },
+    "languages": [
+      {
+        "id": "openapi",
+        "aliases": ["OpenAPI", "Swagger"],
+        "extensions": [".openapi.json", ".openapi.yaml", ".swagger.json", ".swagger.yaml"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "openapi",
+        "scopeName": "source.openapi",
+        "path": "./syntaxes/openapi.tmGrammar.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "fuse.js": "^7.0.0"
+  }
+}

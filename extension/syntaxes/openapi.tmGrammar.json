@@ -1,0 +1,38 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "OpenAPI",
+    "patterns": [
+        {
+            "include": "#openapi-keywords"
+        },
+        {
+            "include": "source.json"
+        },
+        {
+            "include": "source.yaml"
+        }
+    ],
+    "repository": {
+        "openapi-keywords": {
+            "patterns": [
+                {
+                    "name": "keyword.control.openapi",
+                    "match": "\\b(openapi|info|title|version|description|servers|paths|components|schemas|responses|parameters|examples|requestBodies|headers|securitySchemes|links|callbacks|tags|externalDocs)\\b"
+                },
+                {
+                    "name": "keyword.operator.openapi",
+                    "match": "\\b(get|post|put|delete|options|head|patch|trace)\\b"
+                },
+                {
+                    "name": "support.type.openapi",
+                    "match": "\\b(string|number|integer|boolean|array|object)\\b"
+                },
+                {
+                    "name": "constant.language.openapi",
+                    "match": "\\b(true|false|null)\\b"
+                }
+            ]
+        }
+    },
+    "scopeName": "source.openapi"
+}
