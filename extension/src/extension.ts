@@ -67,6 +67,23 @@ export function activate(context: vscode.ExtensionContext) {
         specManagerProvider.refresh();
     });
 
+    // Export/Import configuration commands
+    const exportConfigCommand = vscode.commands.registerCommand('openapi-explorer.exportConfig', () => {
+        specManagerProvider.exportConfig();
+    });
+
+    const importConfigCommand = vscode.commands.registerCommand('openapi-explorer.importConfig', () => {
+        specManagerProvider.importConfig();
+    });
+
+    const exportSelectedItemsCommand = vscode.commands.registerCommand('openapi-explorer.exportSelectedItems', (item?: any) => {
+        if (item && item.contextValue === 'folder') {
+            specManagerProvider.exportSelectedItems(item.folder.id);
+        } else if (item && item.contextValue === 'spec') {
+            specManagerProvider.exportSelectedItems(item.folderId, item.spec.id);
+        }
+    });
+
     // Validate current spec
     const validateCurrentSpecCommand = vscode.commands.registerCommand('openapi-explorer.validateCurrentSpec', async () => {
         if (!currentSpec?.spec) {
@@ -263,6 +280,9 @@ export function activate(context: vscode.ExtensionContext) {
         deleteSpecCommand,
         renameSpecCommand,
         refreshSpecsCommand,
+        exportConfigCommand,
+        importConfigCommand,
+        exportSelectedItemsCommand,
         validateCurrentSpecCommand,
         generateCodeCommand,
         showAnalyticsCommand,

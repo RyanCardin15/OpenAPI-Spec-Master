@@ -60,6 +60,43 @@ Transform your API development workflow with professional-grade tools for OpenAP
 - **Schema Optimization**: Detect unused components and circular dependencies
 - **Compliance Checking**: Ensure adherence to OpenAPI specification standards
 
+### 🔧 Professional Spec Management
+- **Smart Organization**: Create folders to organize your OpenAPI specifications by project, environment, or team
+- **Multi-Source Loading**: Add specs from local files or remote URLs with automatic validation
+- **Real-time Sync**: Keep track of your most important API specifications in one centralized location
+- **Export/Import Configuration**: Backup and share your spec configurations across teams and environments
+
+### 🎯 Advanced Analysis & Validation
+- **Comprehensive Validation**: Industry-standard OpenAPI 3.0+ validation with detailed error reporting
+- **Security Analysis**: Automated security checks for authentication, authorization, and data exposure
+- **Performance Insights**: Built-in analytics for endpoint complexity, response patterns, and optimization opportunities
+- **Best Practices**: Automated suggestions for API design improvements and consistency
+
+### 💻 Intelligent Code Generation
+- **Multi-Language Support**: Generate client code in TypeScript, JavaScript, Python, and cURL
+- **Smart Templates**: Context-aware code generation with proper typing and error handling
+- **Custom Configurations**: Configurable output formats and coding standards
+- **Instant Preview**: Real-time code preview with syntax highlighting
+
+### 📊 Real-Time Performance Monitoring
+- **Smart Caching**: Advanced caching system for lightning-fast search and filter operations
+- **Performance Dashboard**: Real-time metrics displayed in VS Code status bar
+- **Lazy Loading**: Optimized handling of large API specifications (100+ endpoints)
+- **Debounced Operations**: Smooth user experience with optimized search and update delays
+
+### 🚀 Enhanced Developer Experience
+- **Advanced Search**: Fuzzy search across endpoints, parameters, schemas, and documentation
+- **Smart Filtering**: Filter by HTTP methods, tags, security requirements, and custom criteria
+- **Rich Visualizations**: Interactive dependency trees and schema relationship diagrams
+- **Modern UI**: Clean, responsive interface with dark/light theme support
+
+### 📤📥 Configuration Management
+- **Full Export**: Export all folders and specifications for backup or sharing
+- **Selective Export**: Export individual folders or specifications
+- **Flexible Import**: Import configurations with options to replace, merge, or selectively choose items
+- **Team Collaboration**: Share curated API collections with your team
+- **Version Control**: Track and manage different versions of your API specifications
+
 ---
 
 ## 📦 **Installation**
@@ -106,6 +143,27 @@ code --install-extension RyanCardin.openapi-spec-explorer
 - Use **Enhanced View** for advanced search and filtering
 - Generate code examples with one click
 - Export documentation in multiple formats
+
+### 🎮 Quick Start
+
+### 📋 Basic Usage
+1. **Open the Activity Bar**: Click on the OpenAPI Explorer icon in VS Code's Activity Bar
+2. **Create a Folder**: Click the "➕ Create Folder" button in the Spec Manager
+3. **Add Specifications**: Use "📁 Add from File" or "🌐 Add from URL" to load your OpenAPI specs
+4. **Explore & Analyze**: Click on any spec to view detailed analysis in the Enhanced View
+
+### 📤 Export Configuration
+- **Export All**: Click the export button (📤) in the Spec Manager title bar to export all folders and specs
+- **Export Selected**: Right-click on any folder or spec and select "Export Selected Items"
+- **Choose Format**: Save as JSON file for easy sharing and backup
+
+### 📥 Import Configuration
+- **Import**: Click the import button (📥) in the Spec Manager title bar
+- **Choose Import Mode**:
+  - **Replace All**: Replace your entire configuration with the imported one
+  - **Merge**: Add imported items alongside existing ones
+  - **Select Items**: Choose specific folders and specs to import
+- **Conflict Resolution**: Automatically handles duplicate IDs and naming conflicts
 
 ---
 

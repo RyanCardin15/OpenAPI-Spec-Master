@@ -265,6 +265,229 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
     private async saveFolders(): Promise<void> {
         await this.context.globalState.update('openapi-spec-folders', this.folders);
     }
+
+    // Export/Import functionality
+    async exportConfig(): Promise<void> {
+        try {
+            const exportData = {
+                version: '1.0.0',
+                exportDate: new Date().toISOString(),
+                folders: this.folders
+            };
+
+            const defaultFileName = `openapi-spec-config-${new Date().toISOString().split('T')[0]}.json`;
+            
+            const saveUri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file(defaultFileName),
+                filters: {
+                    'JSON': ['json']
+                },
+                title: 'Export Spec Manager Configuration'
+            });
+
+            if (saveUri) {
+                const content = JSON.stringify(exportData, null, 2);
+                await vscode.workspace.fs.writeFile(saveUri, Buffer.from(content, 'utf8'));
+                
+                vscode.window.showInformationMessage(
+                    `Configuration exported successfully to ${saveUri.fsPath}`,
+                    'Open File'
+                ).then(action => {
+                    if (action === 'Open File') {
+                        vscode.window.showTextDocument(saveUri);
+                    }
+                });
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    async importConfig(): Promise<void> {
+        try {
+            const openUri = await vscode.window.showOpenDialog({
+                canSelectFiles: true,
+                canSelectFolders: false,
+                canSelectMany: false,
+                filters: {
+                    'JSON': ['json']
+                },
+                title: 'Import Spec Manager Configuration'
+            });
+
+            if (!openUri || openUri.length === 0) return;
+
+            const content = await vscode.workspace.fs.readFile(openUri[0]);
+            const importData = JSON.parse(content.toString());
+
+            // Validate import data structure
+            if (!importData.folders || !Array.isArray(importData.folders)) {
+                throw new Error('Invalid configuration file format');
+            }
+
+            const importOptions = await vscode.window.showQuickPick(
+                [
+                    { label: 'Replace All', description: 'Replace all existing folders and specs', value: 'replace' },
+                    { label: 'Merge', description: 'Add imported folders alongside existing ones', value: 'merge' },
+                    { label: 'Select Items', description: 'Choose specific folders/specs to import', value: 'select' }
+                ],
+                { placeHolder: 'How would you like to import the configuration?' }
+            );
+
+            if (!importOptions) return;
+
+            if (importOptions.value === 'select') {
+                await this.selectiveImport(importData.folders);
+            } else if (importOptions.value === 'replace') {
+                this.folders = importData.folders;
+                await this.saveFolders();
+                this.refresh();
+                vscode.window.showInformationMessage('Configuration imported successfully (replaced all existing data)');
+            } else if (importOptions.value === 'merge') {
+                // Merge folders with unique IDs
+                const existingIds = new Set(this.folders.map(f => f.id));
+                const foldersToAdd = importData.folders.filter((f: SpecFolder) => !existingIds.has(f.id));
+                
+                // For folders with duplicate IDs, generate new IDs
+                const duplicateFolders = importData.folders.filter((f: SpecFolder) => existingIds.has(f.id));
+                duplicateFolders.forEach((f: SpecFolder) => {
+                    f.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                });
+
+                this.folders.push(...foldersToAdd, ...duplicateFolders);
+                await this.saveFolders();
+                this.refresh();
+                vscode.window.showInformationMessage('Configuration imported successfully (merged with existing data)');
+            }
+
+        } catch (error) {
+            vscode.window.showErrorMessage(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    private async selectiveImport(importFolders: SpecFolder[]): Promise<void> {
+        const folderItems = importFolders.map(folder => ({
+            label: folder.name,
+            description: `${folder.specs.length} spec${folder.specs.length !== 1 ? 's' : ''}`,
+            folder,
+            picked: true
+        }));
+
+        const selectedFolders = await vscode.window.showQuickPick(folderItems, {
+            canPickMany: true,
+            placeHolder: 'Select folders to import'
+        });
+
+        if (!selectedFolders || selectedFolders.length === 0) return;
+
+        // For each selected folder, allow selection of individual specs
+        const foldersToImport: SpecFolder[] = [];
+
+        for (const folderItem of selectedFolders) {
+            if (folderItem.folder.specs.length === 0) {
+                foldersToImport.push(folderItem.folder);
+                continue;
+            }
+
+            const specItems = folderItem.folder.specs.map(spec => ({
+                label: spec.name,
+                description: `${spec.source === 'url' ? '🌐 ' + spec.url : '📁 ' + spec.path}`,
+                spec,
+                picked: true
+            }));
+
+            const selectedSpecs = await vscode.window.showQuickPick(specItems, {
+                canPickMany: true,
+                placeHolder: `Select specs to import from "${folderItem.folder.name}"`
+            });
+
+            if (selectedSpecs && selectedSpecs.length > 0) {
+                const newFolder: SpecFolder = {
+                    ...folderItem.folder,
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                    specs: selectedSpecs.map(s => s.spec)
+                };
+                foldersToImport.push(newFolder);
+            }
+        }
+
+        if (foldersToImport.length > 0) {
+            this.folders.push(...foldersToImport);
+            await this.saveFolders();
+            this.refresh();
+            vscode.window.showInformationMessage(`Imported ${foldersToImport.length} folder${foldersToImport.length !== 1 ? 's' : ''} successfully`);
+        }
+    }
+
+    async exportSelectedItems(folderId?: string, specId?: string): Promise<void> {
+        try {
+            let exportData: any;
+            let defaultFileName: string;
+
+            if (specId && folderId) {
+                // Export single spec
+                const spec = this.getSpec(folderId, specId);
+                if (!spec) {
+                    vscode.window.showErrorMessage('Spec not found');
+                    return;
+                }
+
+                exportData = {
+                    version: '1.0.0',
+                    exportDate: new Date().toISOString(),
+                    exportType: 'spec',
+                    folders: [{
+                        id: 'exported',
+                        name: 'Exported Spec',
+                        specs: [spec]
+                    }]
+                };
+                defaultFileName = `${spec.name.replace(/[^a-zA-Z0-9]/g, '-')}-spec.json`;
+            } else if (folderId) {
+                // Export single folder
+                const folder = this.folders.find(f => f.id === folderId);
+                if (!folder) {
+                    vscode.window.showErrorMessage('Folder not found');
+                    return;
+                }
+
+                exportData = {
+                    version: '1.0.0',
+                    exportDate: new Date().toISOString(),
+                    exportType: 'folder',
+                    folders: [folder]
+                };
+                defaultFileName = `${folder.name.replace(/[^a-zA-Z0-9]/g, '-')}-folder.json`;
+            } else {
+                vscode.window.showErrorMessage('No item selected for export');
+                return;
+            }
+
+            const saveUri = await vscode.window.showSaveDialog({
+                defaultUri: vscode.Uri.file(defaultFileName),
+                filters: {
+                    'JSON': ['json']
+                },
+                title: 'Export Selected Items'
+            });
+
+            if (saveUri) {
+                const content = JSON.stringify(exportData, null, 2);
+                await vscode.workspace.fs.writeFile(saveUri, Buffer.from(content, 'utf8'));
+                
+                vscode.window.showInformationMessage(
+                    `Items exported successfully to ${saveUri.fsPath}`,
+                    'Open File'
+                ).then(action => {
+                    if (action === 'Open File') {
+                        vscode.window.showTextDocument(saveUri);
+                    }
+                });
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
 }
 
 // Tree item classes

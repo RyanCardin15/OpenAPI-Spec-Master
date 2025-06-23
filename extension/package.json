@@ -2,7 +2,7 @@
   "name": "openapi-spec-explorer",
   "displayName": "OpenAPI Spec Master",
   "description": "🚀 Professional OpenAPI/Swagger specification analysis, validation, and code generation with advanced performance monitoring. The ultimate VS Code extension for API developers.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "RyanCardin",
   "author": {
     "name": "Ryan Cardin",
@@ -169,6 +169,24 @@
         "title": "Toggle Performance Monitoring",
         "category": "OpenAPI Enhanced",
         "icon": "$(dashboard)"
+      },
+      {
+        "command": "openapi-explorer.exportConfig",
+        "title": "Export Configuration",
+        "category": "OpenAPI Explorer",
+        "icon": "$(export)"
+      },
+      {
+        "command": "openapi-explorer.importConfig",
+        "title": "Import Configuration",
+        "category": "OpenAPI Explorer",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "openapi-explorer.exportSelectedItems",
+        "title": "Export Selected Items",
+        "category": "OpenAPI Explorer",
+        "icon": "$(export)"
       }
     ],
     "viewsContainers": {
@@ -237,7 +255,17 @@
         {
           "command": "openapi-explorer.refreshSpecs",
           "when": "view == openapi-spec-manager",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "openapi-explorer.exportConfig",
+          "when": "view == openapi-spec-manager",
+          "group": "navigation@2"
+        },
+        {
+          "command": "openapi-explorer.importConfig",
+          "when": "view == openapi-spec-manager",
+          "group": "navigation@3"
         },
         {
           "command": "openapi-explorer.openEnhancedView",
@@ -255,6 +283,16 @@
           "command": "openapi-explorer.searchEndpoints",
           "when": "view == openapi-current-spec && viewItem == endpointsRoot",
           "group": "inline"
+        },
+        {
+          "command": "openapi-explorer.exportSelectedItems",
+          "when": "view == openapi-spec-manager && viewItem == folder",
+          "group": "exportImport"
+        },
+        {
+          "command": "openapi-explorer.exportSelectedItems",
+          "when": "view == openapi-spec-manager && viewItem == spec",
+          "group": "exportImport"
         }
       ]
     },
