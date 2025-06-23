@@ -57,12 +57,16 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    const deleteSpecCommand = vscode.commands.registerCommand('openapi-explorer.deleteSpec', (folderId: string, specId: string) => {
-        specManagerProvider.deleteSpec(folderId, specId);
+    const deleteSpecCommand = vscode.commands.registerCommand('openapi-explorer.deleteSpec', (item?: any) => {
+        if (item && (item.contextValue === 'spec' || item.contextValue === 'spec-loaded' || item.contextValue === 'spec-unloaded' || item.contextValue === 'spec-error' || item.contextValue === 'spec-loading')) {
+            specManagerProvider.deleteSpec(item.folderId, item.spec.id);
+        }
     });
 
-    const renameSpecCommand = vscode.commands.registerCommand('openapi-explorer.renameSpec', (folderId: string, specId: string) => {
-        specManagerProvider.renameSpec(folderId, specId);
+    const renameSpecCommand = vscode.commands.registerCommand('openapi-explorer.renameSpec', (item?: any) => {
+        if (item && (item.contextValue === 'spec' || item.contextValue === 'spec-loaded' || item.contextValue === 'spec-unloaded' || item.contextValue === 'spec-error' || item.contextValue === 'spec-loading')) {
+            specManagerProvider.renameSpec(item.folderId, item.spec.id);
+        }
     });
 
     const refreshSpecsCommand = vscode.commands.registerCommand('openapi-explorer.refreshSpecs', () => {

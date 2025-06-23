@@ -216,9 +216,11 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         });
 
         if (newName && newName !== spec.name) {
+            const oldName = spec.name;
             spec.name = newName;
             await this.saveFolders();
             this.refresh();
+            vscode.window.showInformationMessage(`Renamed "${oldName}" to "${newName}"`);
         }
     }
 
