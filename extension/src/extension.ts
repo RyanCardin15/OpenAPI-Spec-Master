@@ -46,12 +46,14 @@ export function activate(context: vscode.ExtensionContext) {
         specManagerProvider.addSpecFromUrl(folderId);
     });
 
-    const openSpecCommand = vscode.commands.registerCommand('openapi-explorer.openSpec', (folderId: string, specId: string) => {
-        const spec = specManagerProvider.getSpec(folderId, specId);
+    const openSpecCommand = vscode.commands.registerCommand('openapi-explorer.openSpec', async (folderId: string, specId: string) => {
+        const spec = await specManagerProvider.loadSpecContent(folderId, specId);
         if (spec) {
             currentSpec = spec;
             enhancedSpecWebviewProvider.setCurrentSpec(spec);
             vscode.window.showInformationMessage(`Opened: ${spec.name}`);
+        } else {
+            vscode.window.showErrorMessage('Failed to load spec content');
         }
     });
 

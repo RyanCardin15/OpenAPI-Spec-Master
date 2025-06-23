@@ -293,6 +293,77 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         }
     }
 
+    async loadSpecContent(folderId: string, specId: string): Promise<SpecItem | null> {
+        const folder = this.folders.find(f => f.id === folderId);
+        if (!folder) return null;
+
+        const spec = folder.specs.find(s => s.id === specId);
+        if (!spec) return null;
+
+        // If spec already has content, return it
+        if (spec.spec) {
+            return spec;
+        }
+
+        try {
+            vscode.window.showInformationMessage(`Loading spec "${spec.name}"...`);
+            
+            let content: string;
+            
+            if (spec.source === 'file' && spec.path) {
+                // Load from file
+                const document = await vscode.workspace.openTextDocument(vscode.Uri.file(spec.path));
+                content = document.getText();
+            } else if (spec.source === 'url' && spec.url) {
+                // Load from URL
+                const https = require('https');
+                const http = require('http');
+                
+                content = await new Promise<string>((resolve, reject) => {
+                    const client = spec.url!.startsWith('https:') ? https : http;
+                    const request = client.get(spec.url, (response: any) => {
+                        if (response.statusCode !== 200) {
+                            reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+                            return;
+                        }
+                        
+                        let data = '';
+                        response.on('data', (chunk: any) => data += chunk);
+                        response.on('end', () => resolve(data));
+                    });
+                    
+                    request.on('error', reject);
+                    request.setTimeout(10000, () => {
+                        request.destroy();
+                        reject(new Error('Request timeout'));
+                    });
+                });
+            } else {
+                throw new Error('No valid source path or URL found');
+            }
+            
+            // Parse the spec
+            const { OpenAPIParser } = await import('../openapi-parser');
+            const parser = new OpenAPIParser();
+            const parsedSpec = await parser.parseFromText(content);
+            
+            // Update the spec with the loaded content
+            spec.spec = parsedSpec;
+            spec.lastModified = new Date().toISOString();
+            
+            // Save the updated folder structure
+            await this.saveFolders();
+            this.refresh();
+            
+            vscode.window.showInformationMessage(`Successfully loaded "${spec.name}"`);
+            return spec;
+
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to load spec "${spec.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+            return null;
+        }
+    }
+
     private async loadFolders(): Promise<void> {
         const stored = this.context.globalState.get<SpecFolder[]>('openapi-spec-folders', []);
         this.folders = stored;
@@ -647,10 +718,15 @@ export class SpecItemTreeItem extends SpecTreeItem {
     ) {
         super(spec.name, vscode.TreeItemCollapsibleState.None);
         
-        this.description = spec.source === 'url' ? '🌐' : '📁';
-        this.tooltip = `${spec.name}\nSource: ${spec.source === 'url' ? spec.url : spec.path}\nLast modified: ${new Date(spec.lastModified).toLocaleString()}`;
+        // Show different indicators based on whether spec content is loaded
+        const isLoaded = !!spec.spec;
+        const sourceIcon = spec.source === 'url' ? '🌐' : '📁';
+        this.description = isLoaded ? sourceIcon : `${sourceIcon} (needs loading)`;
         
-        this.iconPath = new vscode.ThemeIcon('file-code');
+        this.tooltip = `${spec.name}\nSource: ${spec.source === 'url' ? spec.url : spec.path}\nLast modified: ${new Date(spec.lastModified).toLocaleString()}\nStatus: ${isLoaded ? 'Loaded' : 'Not loaded - click to load'}`;
+        
+        // Different icon for loaded vs not loaded specs
+        this.iconPath = new vscode.ThemeIcon(isLoaded ? 'file-code' : 'file-add');
         this.command = {
             command: 'openapi-explorer.openSpec',
             title: 'Open Spec',
