@@ -81,7 +81,7 @@ export function activate(context: vscode.ExtensionContext) {
     const exportSelectedItemsCommand = vscode.commands.registerCommand('openapi-explorer.exportSelectedItems', (item?: any) => {
         if (item && item.contextValue === 'folder') {
             specManagerProvider.exportSelectedItems(item.folder.id);
-        } else if (item && item.contextValue === 'spec') {
+        } else if (item && (item.contextValue === 'spec' || item.contextValue === 'spec-loaded' || item.contextValue === 'spec-unloaded' || item.contextValue === 'spec-error' || item.contextValue === 'spec-loading')) {
             specManagerProvider.exportSelectedItems(item.folderId, item.spec.id);
         }
     });
@@ -287,7 +287,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     const retryLoadSpecCommand = vscode.commands.registerCommand('openapi-explorer.retryLoadSpec', (item?: any) => {
-        if (item && (item.contextValue === 'spec-error' || item.contextValue === 'spec-unloaded')) {
+        if (item && (item.contextValue === 'spec-error' || item.contextValue === 'spec-unloaded' || item.contextValue === 'spec-loading')) {
             specManagerProvider.retryLoadSpec(item.folderId, item.spec.id);
         }
     });

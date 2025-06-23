@@ -305,6 +305,15 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         spec.loadingProgress = 0;
         this.refresh();
 
+        // Set up periodic refresh during loading
+        const refreshInterval = setInterval(() => {
+            if (spec.status === 'loading') {
+                this.refresh();
+            } else {
+                clearInterval(refreshInterval);
+            }
+        }, 500); // Refresh every 500ms while loading
+
         let progressReporter: vscode.Progress<{ message?: string; increment?: number }> | null = null;
 
         try {
@@ -816,25 +825,25 @@ export class SpecItemTreeItem extends SpecTreeItem {
         
         switch (spec.status) {
             case 'loaded':
-                statusIcon = '🟢';
+                statusIcon = '✅';
                 statusText = 'Loaded';
                 break;
             case 'loading':
-                statusIcon = '🟡';
+                statusIcon = '⏳';
                 statusText = spec.loadingProgress ? `Loading... ${spec.loadingProgress}%` : 'Loading...';
                 break;
             case 'error':
-                statusIcon = '🔴';
+                statusIcon = '❌';
                 statusText = `Error: ${spec.error || 'Unknown error'}`;
                 break;
             case 'unloaded':
             default:
-                statusIcon = '⚪';
+                statusIcon = '⭕';
                 statusText = 'Not loaded';
                 break;
         }
         
-        this.description = `${sourceIcon} ${statusIcon}`;
+        this.description = `${sourceIcon} ${statusIcon} ${statusText}`;
         
         this.tooltip = `${spec.name}\nSource: ${spec.source === 'url' ? spec.url : spec.path}\nStatus: ${statusText}\nLast modified: ${new Date(spec.lastModified).toLocaleString()}`;
         
@@ -874,6 +883,8 @@ export class SpecItemTreeItem extends SpecTreeItem {
                 this.contextValue = 'spec-loading';
                 break;
             case 'loaded':
+                this.contextValue = 'spec-loaded';
+                break;
             default:
                 this.contextValue = 'spec';
                 break;
