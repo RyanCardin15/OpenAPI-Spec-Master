@@ -2,7 +2,7 @@
   "name": "openapi-spec-explorer",
   "displayName": "OpenAPI Spec Explorer",
   "description": "Enhanced OpenAPI specification explorer with advanced visualization, code generation, and analysis features",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "RyanCardin",
   "author": {
     "name": "Ryan Cardin",
