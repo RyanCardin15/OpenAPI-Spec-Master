@@ -6,6 +6,7 @@ import { EnhancedSpecWebviewProvider } from './providers/enhanced-spec-webview-p
 import { CodeGenerator } from './code-generator';
 import { ValidationEngine } from './validation-engine';
 import { DiagnosticsProvider } from './diagnostics-provider';
+import { registerPerformanceCommands } from './utils/performance-monitor-ui';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('OpenAPI Explorer extension is now active!');
@@ -197,6 +198,9 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.window.showInformationMessage(`Analytics for ${currentSpec.name} - Feature coming soon!`);
     });
+
+    // Register performance monitoring commands
+    registerPerformanceCommands(context);
 
     // Open Enhanced View
     const openEnhancedViewCommand = vscode.commands.registerCommand('openapi-explorer.openEnhancedView', () => {

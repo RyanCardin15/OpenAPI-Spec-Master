@@ -1,8 +1,8 @@
 {
   "name": "openapi-spec-explorer",
   "displayName": "OpenAPI Spec Explorer",
-  "description": "Advanced OpenAPI specification analysis, validation, and code generation directly in VS Code",
-  "version": "1.0.1",
+  "description": "Advanced OpenAPI specification analysis, validation, and code generation with high-performance optimizations and real-time monitoring directly in VS Code",
+  "version": "1.0.0",
   "publisher": "spec-master",
   "repository": {
     "type": "git",
@@ -23,7 +23,11 @@
     "api",
     "documentation",
     "validation",
-    "code generation"
+    "code generation",
+    "performance",
+    "caching",
+    "monitoring",
+    "optimization"
   ],
   "activationEvents": [
     "onLanguage:json",
@@ -117,6 +121,18 @@
         "title": "Filter by Method",
         "category": "OpenAPI Explorer",
         "icon": "$(filter)"
+      },
+      {
+        "command": "openapi-enhanced.showPerformanceReport",
+        "title": "Show Performance Report",
+        "category": "OpenAPI Enhanced",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "openapi-enhanced.togglePerformanceMonitoring",
+        "title": "Toggle Performance Monitoring",
+        "category": "OpenAPI Enhanced",
+        "icon": "$(dashboard)"
       }
     ],
     "viewsContainers": {
@@ -229,6 +245,35 @@
           "type": "boolean",
           "default": true,
           "description": "Enable diagnostic messages for OpenAPI validation"
+        },
+        "openapi-enhanced.performance.enableCaching": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable performance caching for search and filter operations"
+        },
+        "openapi-enhanced.performance.enableMonitoring": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time performance monitoring in status bar"
+        },
+        "openapi-enhanced.performance.enableLazyLoading": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable lazy loading for large datasets (>100 endpoints)"
+        },
+        "openapi-enhanced.performance.cacheSize": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum number of search results to cache",
+          "minimum": 10,
+          "maximum": 200
+        },
+        "openapi-enhanced.performance.debounceDelay": {
+          "type": "number",
+          "default": 300,
+          "description": "Debounce delay in milliseconds for search and update operations",
+          "minimum": 100,
+          "maximum": 1000
         }
       }
     },

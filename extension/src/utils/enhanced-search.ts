@@ -1,8 +1,14 @@
 import { EnhancedEndpointData, EnhancedSchema, FilterState, GroupingState, SearchOptions } from '../types/enhanced-spec';
+import { globalCache, globalPerformanceMonitor, memoize } from './performance-cache';
+import { LazyLoader, createOptimizedLoader } from './lazy-loader';
 
 export class EnhancedSearch {
   private endpoints: EnhancedEndpointData[] = [];
   private schemas: EnhancedSchema[] = [];
+  private endpointLoader?: LazyLoader<EnhancedEndpointData>;
+  private schemaLoader?: LazyLoader<EnhancedSchema>;
+  
+  // Memoized expensive operations will be initialized in constructor
 
   constructor(endpoints: EnhancedEndpointData[] = [], schemas: EnhancedSchema[] = []) {
     this.endpoints = endpoints;
@@ -10,8 +16,32 @@ export class EnhancedSearch {
   }
 
   updateData(endpoints: EnhancedEndpointData[], schemas: EnhancedSchema[]) {
+    const endTimer = globalPerformanceMonitor.startTiming('updateData');
+    
     this.endpoints = endpoints;
     this.schemas = schemas;
+    
+    // Create lazy loaders for large datasets
+    if (endpoints.length > 100) {
+      this.endpointLoader = createOptimizedLoader(endpoints, {
+        pageSize: 50,
+        preloadPages: 2,
+        maxCacheSize: 10
+      });
+    }
+    
+    if (schemas.length > 50) {
+      this.schemaLoader = createOptimizedLoader(schemas, {
+        pageSize: 25,
+        preloadPages: 2,
+        maxCacheSize: 8
+      });
+    }
+    
+    // Invalidate caches when data changes
+    globalCache.invalidateAll();
+    
+    endTimer();
   }
 
   searchEndpoints(filters: FilterState, grouping: GroupingState, searchOptions: SearchOptions = {
@@ -19,8 +49,22 @@ export class EnhancedSearch {
     caseSensitive: false,
     includeDescription: true,
     includeTags: true,
-    includeParameters: true
+    includeParameters: true,
+    includeResponseBodies: true,
+    includeRequestBodies: true,
+    includeTestCases: true,
+    includeBusinessContext: true,
+    searchDepth: 'deep'
   }) {
+    const endTimer = globalPerformanceMonitor.startTiming('searchEndpoints');
+    
+    // Check cache first
+    const cachedResults = globalCache.getSearchResults(filters, grouping, searchOptions);
+    if (cachedResults) {
+      endTimer();
+      return cachedResults;
+    }
+    
     let result = [...this.endpoints];
 
     // Apply search filter
@@ -28,18 +72,19 @@ export class EnhancedSearch {
       result = this.applyTextSearch(result, filters.search, searchOptions);
     }
 
+    // Apply response body search filter
+    if (filters.responseBodySearch?.trim()) {
+      result = this.applyResponseBodySearch(result, filters.responseBodySearch, searchOptions);
+    }
+
     // Apply method filter
     if (filters.methods.length > 0) {
-      result = result.filter(endpoint => 
-        filters.methods.includes(endpoint.method)
-      );
+      result = result.filter(endpoint => filters.methods.includes(endpoint.method));
     }
 
     // Apply tag filter
     if (filters.tags.length > 0) {
-      result = result.filter(endpoint =>
-        endpoint.tags.some(tag => filters.tags.includes(tag))
-      );
+      result = result.filter(endpoint => endpoint.tags.some(tag => filters.tags.includes(tag)));
     }
 
     // Apply status code filter
@@ -53,16 +98,12 @@ export class EnhancedSearch {
 
     // Apply deprecated filter
     if (filters.deprecated !== null) {
-      result = result.filter(endpoint => 
-        endpoint.deprecated === filters.deprecated
-      );
+      result = result.filter(endpoint => endpoint.deprecated === filters.deprecated);
     }
 
     // Apply complexity filter
     if (filters.complexity.length > 0) {
-      result = result.filter(endpoint =>
-        endpoint.complexity && filters.complexity.includes(endpoint.complexity)
-      );
+      result = result.filter(endpoint => endpoint.complexity && filters.complexity.includes(endpoint.complexity));
     }
 
     // Apply security filter
@@ -87,30 +128,47 @@ export class EnhancedSearch {
 
     // Apply parameters filter
     if (filters.hasParameters !== null) {
-      result = result.filter(endpoint => {
-        const hasParams = endpoint.parameters.length > 0 || endpoint.hasPathParams || endpoint.hasQueryParams;
-        return hasParams === filters.hasParameters;
-      });
+      result = result.filter(endpoint => filters.hasParameters ? endpoint.parameters.length > 0 : endpoint.parameters.length === 0);
     }
 
     // Apply request body filter
     if (filters.hasRequestBody !== null) {
-      result = result.filter(endpoint => {
-        const hasBody = !!endpoint.requestBody || endpoint.hasRequestBody;
-        return hasBody === filters.hasRequestBody;
-      });
+      result = result.filter(endpoint => endpoint.hasRequestBody === filters.hasRequestBody);
     }
 
     // Apply response time filter
     if (filters.responseTime.length > 0) {
-      result = result.filter(endpoint =>
-        endpoint.estimatedResponseTime && filters.responseTime.includes(endpoint.estimatedResponseTime)
-      );
+      result = result.filter(endpoint => endpoint.estimatedResponseTime && filters.responseTime.includes(endpoint.estimatedResponseTime));
+    }
+
+
+
+    // Apply test cases filter
+    if (filters.hasTestCases !== null) {
+      result = result.filter(endpoint => filters.hasTestCases ? (endpoint.testCases && endpoint.testCases.length > 0) : (!endpoint.testCases || endpoint.testCases.length === 0));
+    }
+
+    // Apply examples filter
+    if (filters.hasExamples !== null) {
+      const hasExamples = (endpoint: EnhancedEndpointData) => {
+        return (endpoint.sampleRequestBodies && endpoint.sampleRequestBodies.length > 0) || 
+               (endpoint.sampleResponses && Object.keys(endpoint.sampleResponses).length > 0);
+      };
+      result = result.filter(endpoint => filters.hasExamples ? hasExamples(endpoint) : !hasExamples(endpoint));
+    }
+
+    // Apply breaking changes filter
+    if (filters.breaking !== null) {
+      result = result.filter(endpoint => filters.breaking ? (endpoint.changeHistory?.some(change => change.breaking)) : (!endpoint.changeHistory?.some(change => change.breaking)));
     }
 
     // Apply sorting
     result = this.applySorting(result, grouping);
 
+    // Cache the results
+    globalCache.setSearchResults(filters, grouping, searchOptions, result);
+    
+    endTimer();
     return result;
   }
 
@@ -119,7 +177,12 @@ export class EnhancedSearch {
     caseSensitive: false,
     includeDescription: true,
     includeTags: false,
-    includeParameters: false
+    includeParameters: false,
+    includeResponseBodies: false,
+    includeRequestBodies: false,
+    includeTestCases: false,
+    includeBusinessContext: true,
+    searchDepth: 'deep'
   }) {
     if (!searchTerm.trim()) {
       return this.schemas;
@@ -142,8 +205,20 @@ export class EnhancedSearch {
   }
 
   groupEndpoints(endpoints: EnhancedEndpointData[], groupBy: GroupingState['groupBy']) {
+    const endTimer = globalPerformanceMonitor.startTiming('groupEndpoints');
+    
+    // Check cache first
+    const cachedResults = globalCache.getGroupedResults(endpoints, groupBy);
+    if (cachedResults) {
+      endTimer();
+      return cachedResults;
+    }
+    
     if (groupBy === 'none') {
-      return { 'All Endpoints': endpoints };
+      const result = { 'All Endpoints': endpoints };
+      globalCache.setGroupedResults(endpoints, groupBy, result);
+      endTimer();
+      return result;
     }
 
     const groups: { [key: string]: EnhancedEndpointData[] } = {};
@@ -180,12 +255,38 @@ export class EnhancedSearch {
             groupKey = 'None';
           }
           break;
+        case 'domain':
+          if (endpoint.businessContext) {
+            // Extract domain from business context
+            const words = endpoint.businessContext.toLowerCase().split(/\s+/);
+            const domains = ['user', 'auth', 'payment', 'order', 'product', 'admin', 'notification'];
+            const foundDomain = domains.find(domain => words.some(word => word.includes(domain)));
+            groupKey = foundDomain ? foundDomain.charAt(0).toUpperCase() + foundDomain.slice(1) : 'General';
+          } else {
+            groupKey = 'Unknown';
+          }
+          break;
+        case 'status':
+          if (endpoint.deprecated) {
+            groupKey = 'Deprecated';
+          } else if (endpoint.changeHistory?.some(change => change.breaking)) {
+            groupKey = 'Breaking Changes';
+          } else if (endpoint.testCases && endpoint.testCases.length > 0) {
+            groupKey = 'Tested';
+          } else {
+            groupKey = 'Active';
+          }
+          break;
       }
 
       if (!groups[groupKey]) groups[groupKey] = [];
       groups[groupKey].push(endpoint);
     });
 
+    // Cache the results
+    globalCache.setGroupedResults(endpoints, groupBy, groups);
+    
+    endTimer();
     return groups;
   }
 
@@ -198,20 +299,106 @@ export class EnhancedSearch {
       const description = options.caseSensitive ? (endpoint.description || '') : (endpoint.description || '').toLowerCase();
       const tags = endpoint.tags.map(tag => options.caseSensitive ? tag : tag.toLowerCase());
       const parameterNames = endpoint.parameters.map(p => options.caseSensitive ? p.name : p.name.toLowerCase());
+      const businessContext = options.caseSensitive ? (endpoint.businessContext || '') : (endpoint.businessContext || '').toLowerCase();
+      const operationId = options.caseSensitive ? (endpoint.operationId || '') : (endpoint.operationId || '').toLowerCase();
 
+      // Basic search fields
+      let matches = false;
+      
       if (options.fuzzy) {
-        return this.fuzzyMatch(path, term) ||
-               this.fuzzyMatch(summary, term) ||
-               (options.includeDescription && this.fuzzyMatch(description, term)) ||
-               (options.includeTags && tags.some(tag => this.fuzzyMatch(tag, term))) ||
-               (options.includeParameters && parameterNames.some(param => this.fuzzyMatch(param, term)));
+        matches = this.fuzzyMatch(path, term) ||
+                 this.fuzzyMatch(summary, term) ||
+                 this.fuzzyMatch(operationId, term) ||
+                 (options.includeDescription && this.fuzzyMatch(description, term)) ||
+                 (options.includeTags && tags.some(tag => this.fuzzyMatch(tag, term))) ||
+                 (options.includeParameters && parameterNames.some(param => this.fuzzyMatch(param, term))) ||
+                 (options.includeBusinessContext && this.fuzzyMatch(businessContext, term));
       } else {
-        return path.includes(term) ||
-               summary.includes(term) ||
-               (options.includeDescription && description.includes(term)) ||
-               (options.includeTags && tags.some(tag => tag.includes(term))) ||
-               (options.includeParameters && parameterNames.some(param => param.includes(term)));
+        matches = path.includes(term) ||
+                 summary.includes(term) ||
+                 operationId.includes(term) ||
+                 (options.includeDescription && description.includes(term)) ||
+                 (options.includeTags && tags.some(tag => tag.includes(term))) ||
+                 (options.includeParameters && parameterNames.some(param => param.includes(term))) ||
+                 (options.includeBusinessContext && businessContext.includes(term));
       }
+
+      // Extended search for comprehensive mode
+      if (!matches && options.searchDepth === 'comprehensive') {
+        // Search in request body
+        if (options.includeRequestBodies && endpoint.requestBody) {
+          const requestBodyStr = JSON.stringify(endpoint.requestBody).toLowerCase();
+          matches = options.fuzzy ? this.fuzzyMatch(requestBodyStr, term) : requestBodyStr.includes(term);
+        }
+
+        // Search in test cases
+        if (!matches && options.includeTestCases && endpoint.testCases) {
+          endpoint.testCases.forEach(testCase => {
+            const testStr = `${testCase.name} ${testCase.description || ''}`.toLowerCase();
+            if (options.fuzzy ? this.fuzzyMatch(testStr, term) : testStr.includes(term)) {
+              matches = true;
+            }
+          });
+        }
+
+        // Search in AI suggestions
+        if (!matches && endpoint.aiSuggestions) {
+          endpoint.aiSuggestions.forEach(suggestion => {
+            const suggestionStr = suggestion.toLowerCase();
+            if (options.fuzzy ? this.fuzzyMatch(suggestionStr, term) : suggestionStr.includes(term)) {
+              matches = true;
+            }
+          });
+        }
+      }
+
+      return matches;
+    });
+  }
+
+  private applyResponseBodySearch(endpoints: EnhancedEndpointData[], searchTerm: string, options: SearchOptions): EnhancedEndpointData[] {
+    const term = options.caseSensitive ? searchTerm : searchTerm.toLowerCase();
+    
+    return endpoints.filter(endpoint => {
+      // Search in response body content
+      if (endpoint.responseBodyContent) {
+        const responseContent = options.caseSensitive ? endpoint.responseBodyContent : endpoint.responseBodyContent.toLowerCase();
+        if (options.fuzzy ? this.fuzzyMatch(responseContent, term) : responseContent.includes(term)) {
+          return true;
+        }
+      }
+
+      // Search in response schemas
+      if (endpoint.responseBodySchemas) {
+        for (const [statusCode, schema] of Object.entries(endpoint.responseBodySchemas)) {
+          const schemaStr = JSON.stringify(schema).toLowerCase();
+          if (options.fuzzy ? this.fuzzyMatch(schemaStr, term) : schemaStr.includes(term)) {
+            return true;
+          }
+        }
+      }
+
+      // Search in sample responses
+      if (endpoint.sampleResponses) {
+        for (const [statusCode, response] of Object.entries(endpoint.sampleResponses)) {
+          const responseStr = JSON.stringify(response).toLowerCase();
+          if (options.fuzzy ? this.fuzzyMatch(responseStr, term) : responseStr.includes(term)) {
+            return true;
+          }
+        }
+      }
+
+      // Search in response descriptions and content types
+      if (endpoint.responses) {
+        for (const [statusCode, response] of Object.entries(endpoint.responses)) {
+          const responseStr = JSON.stringify(response).toLowerCase();
+          if (options.fuzzy ? this.fuzzyMatch(responseStr, term) : responseStr.includes(term)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
     });
   }
 
@@ -236,6 +423,16 @@ export class EnhancedSearch {
         case 'responseTime':
           const timeOrder = { fast: 1, medium: 2, slow: 3 };
           comparison = (timeOrder[a.estimatedResponseTime || 'medium'] || 2) - (timeOrder[b.estimatedResponseTime || 'medium'] || 2);
+          break;
+        case 'lastModified':
+          const aDate = a.changeHistory?.[0]?.date || '1970-01-01';
+          const bDate = b.changeHistory?.[0]?.date || '1970-01-01';
+          comparison = new Date(aDate).getTime() - new Date(bDate).getTime();
+          break;
+        case 'usage':
+          const aUsage = a.performanceMetrics?.successRate || 0;
+          const bUsage = b.performanceMetrics?.successRate || 0;
+          comparison = aUsage - bUsage;
           break;
         default:
           comparison = a.path.localeCompare(b.path);
@@ -295,5 +492,34 @@ export class EnhancedSearch {
       });
     });
     return Array.from(schemes).sort();
+  }
+
+
+
+  // New utility methods for enhanced search
+  searchByComplexity(complexity: 'low' | 'medium' | 'high'): EnhancedEndpointData[] {
+    return this.endpoints.filter(endpoint => endpoint.complexity === complexity);
+  }
+
+  searchByPerformance(threshold: number): EnhancedEndpointData[] {
+    return this.endpoints.filter(endpoint => 
+      endpoint.performanceMetrics?.averageResponseTime && 
+      endpoint.performanceMetrics.averageResponseTime <= threshold
+    );
+  }
+
+  searchByTestCoverage(): { tested: EnhancedEndpointData[], untested: EnhancedEndpointData[] } {
+    const tested = this.endpoints.filter(endpoint => endpoint.testCases && endpoint.testCases.length > 0);
+    const untested = this.endpoints.filter(endpoint => !endpoint.testCases || endpoint.testCases.length === 0);
+    return { tested, untested };
+  }
+
+  searchRelatedEndpoints(endpointId: string): EnhancedEndpointData[] {
+    const endpoint = this.endpoints.find(e => e.id === endpointId);
+    if (!endpoint || !endpoint.relatedEndpoints) {
+      return [];
+    }
+    
+    return this.endpoints.filter(e => endpoint.relatedEndpoints!.includes(e.id));
   }
 } 
