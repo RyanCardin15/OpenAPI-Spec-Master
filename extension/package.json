@@ -2,7 +2,7 @@
   "name": "openapi-spec-explorer",
   "displayName": "OpenAPI Spec Explorer",
   "description": "Enhanced OpenAPI specification explorer with advanced visualization, code generation, and analysis features",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "publisher": "RyanCardin",
   "author": {
     "name": "Ryan Cardin",
@@ -205,6 +205,12 @@
         "title": "Retry Loading",
         "category": "OpenAPI Explorer",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "openapi-explorer.copySpecUrl",
+        "title": "Copy URL/Path",
+        "category": "OpenAPI Explorer",
+        "icon": "$(clippy)"
       }
     ],
     "viewsContainers": {
@@ -346,6 +352,11 @@
           "command": "openapi-explorer.retryLoadSpec",
           "when": "view == openapi-spec-manager && viewItem == spec-loading",
           "group": "loading@1"
+        },
+        {
+          "command": "openapi-explorer.copySpecUrl",
+          "when": "view == openapi-spec-manager && (viewItem == spec || viewItem == spec-loaded || viewItem == spec-unloaded || viewItem == spec-error || viewItem == spec-loading)",
+          "group": "copy@1"
         }
       ]
     },
@@ -441,6 +452,7 @@
   "devDependencies": {
     "@types/node": "16.x",
     "@types/vscode": "^1.74.0",
+    "@vscode/vsce": "^3.5.0",
     "typescript": "^4.9.4"
   },
   "dependencies": {

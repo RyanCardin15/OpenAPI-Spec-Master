@@ -1339,7 +1339,35 @@ export class EnhancedSpecWebviewProvider implements vscode.WebviewViewProvider {
     private _generateTypeScriptTypes(endpoint: EnhancedEndpointData): string {
         let code = `// Types for ${endpoint.method.toUpperCase()} ${endpoint.path}\n\n`;
         
-        // Request parameters interface
+        // Collect all schemas referenced by this endpoint
+        const referencedSchemas = new Set<string>();
+        
+        // Extract schemas from request body
+        if (endpoint.requestBody) {
+            const requestBodySchema = this._extractRequestBodySchema(endpoint.requestBody);
+            this._collectSchemaReferences(requestBodySchema, referencedSchemas);
+        }
+        
+        // Extract schemas from response bodies
+        if (endpoint.responseBodySchemas && Object.keys(endpoint.responseBodySchemas).length > 0) {
+            Object.values(endpoint.responseBodySchemas).forEach(schema => {
+                this._collectSchemaReferences(schema, referencedSchemas);
+            });
+        }
+        
+        // Generate the actual schema types that are referenced
+        if (referencedSchemas.size > 0) {
+            code += '// Referenced schema types\n\n';
+            for (const schemaRef of referencedSchemas) {
+                const schemaDefinition = this._resolveSchemaReference({ $ref: `#/components/schemas/${schemaRef}` });
+                if (schemaDefinition) {
+                    const interfaceContent = this._generateTypeScriptInterface(schemaDefinition, schemaRef);
+                    code += interfaceContent + '\n\n';
+                }
+            }
+        }
+        
+        // Only generate parameter interfaces if there are parameters
         if (endpoint.parameters.length > 0) {
             const pathParams = endpoint.parameters.filter(p => p.in === 'path');
             const queryParams = endpoint.parameters.filter(p => p.in === 'query');
@@ -1373,61 +1401,29 @@ export class EnhancedSpecWebviewProvider implements vscode.WebviewViewProvider {
             }
         }
 
-        // Request body interface - now properly parsing the schema
-        if (endpoint.requestBody) {
-            const requestBodySchema = this._extractRequestBodySchema(endpoint.requestBody);
-            if (requestBodySchema) {
-                const interfaceContent = this._generateTypeScriptInterface(requestBodySchema, 'RequestBody');
-                code += interfaceContent + '\n\n';
-            } else {
-                code += 'interface RequestBody {\n';
-                code += '  [key: string]: any;\n';
-                code += '}\n\n';
-            }
-        }
+        return code;
+    }
 
-        // Response interfaces - now properly parsing the actual response schemas
-        if (endpoint.responseBodySchemas && Object.keys(endpoint.responseBodySchemas).length > 0) {
-            Object.entries(endpoint.responseBodySchemas).forEach(([status, schema]) => {
-                if (schema) {
-                    const interfaceName = `Response${status}`;
-                    const interfaceContent = this._generateTypeScriptInterface(schema, interfaceName);
-                    code += interfaceContent + '\n\n';
-                } else {
-                    code += `interface Response${status} {\n`;
-                    code += '  [key: string]: any;\n';
-                    code += '}\n\n';
-                }
+    private _collectSchemaReferences(schema: any, referencedSchemas: Set<string>): void {
+        if (!schema) return;
+        
+        if (schema.$ref && schema.$ref.startsWith('#/components/schemas/')) {
+            const schemaName = schema.$ref.split('/').pop();
+            if (schemaName) {
+                referencedSchemas.add(schemaName);
+            }
+        } else if (schema.type === 'array' && schema.items) {
+            this._collectSchemaReferences(schema.items, referencedSchemas);
+        } else if (schema.type === 'object' && schema.properties) {
+            Object.values(schema.properties).forEach((prop: any) => {
+                this._collectSchemaReferences(prop, referencedSchemas);
+            });
+        } else if (schema.allOf || schema.oneOf || schema.anyOf) {
+            const compositions = schema.allOf || schema.oneOf || schema.anyOf;
+            compositions.forEach((subSchema: any) => {
+                this._collectSchemaReferences(subSchema, referencedSchemas);
             });
         }
-
-        // Add utility types for the endpoint
-        const operationId = endpoint.operationId || `${endpoint.method.toLowerCase()}${endpoint.path.replace(/[^a-zA-Z0-9]/g, '')}`;
-        code += `// Utility types for this endpoint\n`;
-        code += `export type ${this._capitalize(operationId)}Request = {\n`;
-        if (endpoint.parameters.some(p => p.in === 'path')) {
-            code += `  pathParams: PathParameters;\n`;
-        }
-        if (endpoint.parameters.some(p => p.in === 'query')) {
-            code += `  queryParams?: QueryParameters;\n`;
-        }
-        if (endpoint.parameters.some(p => p.in === 'header')) {
-            code += `  headerParams?: HeaderParameters;\n`;
-        }
-        if (endpoint.requestBody) {
-            code += `  body: RequestBody;\n`;
-        }
-        code += `};\n\n`;
-
-        // Add response union type if multiple responses exist
-        const responseStatuses = Object.keys(endpoint.responseBodySchemas || {});
-        if (responseStatuses.length > 1) {
-            code += `export type ${this._capitalize(operationId)}Response = \n`;
-            code += responseStatuses.map(status => `  Response${status}`).join(' |\n');
-            code += ';\n\n';
-        }
-
-        return code;
     }
 
     private _extractRequestBodySchema(requestBody: any): any {

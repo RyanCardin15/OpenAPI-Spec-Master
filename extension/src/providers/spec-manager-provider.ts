@@ -272,8 +272,13 @@ export class SpecManagerProvider implements vscode.TreeDataProvider<SpecTreeItem
         const spec = folder.specs.find(s => s.id === specId);
         if (!spec) return null;
 
-        // If spec already has content, return it
+        // If spec already has content, ensure status is set correctly and return it
         if (spec.spec) {
+            if (spec.status !== 'loaded') {
+                spec.status = 'loaded';
+                await this.saveFolders();
+                this.refresh();
+            }
             return spec;
         }
 

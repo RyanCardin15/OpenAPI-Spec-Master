@@ -296,6 +296,21 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    const copySpecUrlCommand = vscode.commands.registerCommand('openapi-explorer.copySpecUrl', (item?: any) => {
+        if (item && (item.contextValue === 'spec' || item.contextValue === 'spec-loaded' || item.contextValue === 'spec-unloaded' || item.contextValue === 'spec-error' || item.contextValue === 'spec-loading')) {
+            const spec = item.spec;
+            if (spec.source === 'url' && spec.url) {
+                vscode.env.clipboard.writeText(spec.url);
+                vscode.window.showInformationMessage(`Copied URL to clipboard: ${spec.url}`);
+            } else if (spec.source === 'file' && spec.path) {
+                vscode.env.clipboard.writeText(spec.path);
+                vscode.window.showInformationMessage(`Copied file path to clipboard: ${spec.path}`);
+            } else {
+                vscode.window.showWarningMessage('No URL or file path to copy');
+            }
+        }
+    });
+
     // Register all commands
     context.subscriptions.push(
         createFolderCommand,
@@ -311,6 +326,7 @@ export function activate(context: vscode.ExtensionContext) {
         deleteFolderCommand,
         renameFolderCommand,
         retryLoadSpecCommand,
+        copySpecUrlCommand,
         validateCurrentSpecCommand,
         generateCodeCommand,
         showAnalyticsCommand,
