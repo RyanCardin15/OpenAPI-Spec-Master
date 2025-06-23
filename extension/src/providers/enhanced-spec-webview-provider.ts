@@ -955,6 +955,25 @@ export class EnhancedSpecWebviewProvider implements vscode.WebviewViewProvider {
         );
 
         panel.webview.html = this._getEndpointDetailsPanel(endpoint);
+
+        // Handle messages from the webview
+        panel.webview.onDidReceiveMessage(data => {
+            switch (data.type) {
+                case 'generateCode':
+                    this._generateCodeForEndpoint(endpointId);
+                    break;
+                case 'copyPath':
+                    vscode.env.clipboard.writeText(endpoint.path);
+                    vscode.window.showInformationMessage('Path copied to clipboard');
+                    break;
+                case 'copyUrl':
+                    const baseUrl = this._currentSpec?.spec?.servers?.[0]?.url || 'https://api.example.com';
+                    const fullUrl = `${baseUrl}${endpoint.path}`;
+                    vscode.env.clipboard.writeText(fullUrl);
+                    vscode.window.showInformationMessage('URL copied to clipboard');
+                    break;
+            }
+        });
     }
 
     private _showEndpointBody(endpointId: string): void {
@@ -1318,7 +1337,7 @@ export class EnhancedSpecWebviewProvider implements vscode.WebviewViewProvider {
     }
 
     private _generateTypeScriptTypes(endpoint: EnhancedEndpointData): string {
-        let code = `// Types for ${endpoint.method} ${endpoint.path}\n\n`;
+        let code = `// Types for ${endpoint.method.toUpperCase()} ${endpoint.path}\n\n`;
         
         // Request parameters interface
         if (endpoint.parameters.length > 0) {
@@ -1329,7 +1348,8 @@ export class EnhancedSpecWebviewProvider implements vscode.WebviewViewProvider {
             if (pathParams.length > 0) {
                 code += 'interface PathParameters {\n';
                 pathParams.forEach(param => {
-                    code += `  ${param.name}${param.required ? '' : '?'}: ${this._getTypeScriptType(param.schema)};\n`;
+                    const description = param.description ? `  /** ${param.description} */\n` : '';
+                    code += `${description}  ${param.name}${param.required ? '' : '?'}: ${this._getTypeScriptType(param.schema)};\n`;
                 });
                 code += '}\n\n';
             }
@@ -1337,7 +1357,8 @@ export class EnhancedSpecWebviewProvider implements vscode.WebviewViewProvider {
             if (queryParams.length > 0) {
                 code += 'interface QueryParameters {\n';
                 queryParams.forEach(param => {
-                    code += `  ${param.name}${param.required ? '' : '?'}: ${this._getTypeScriptType(param.schema)};\n`;
+                    const description = param.description ? `  /** ${param.description} */\n` : '';
+                    code += `${description}  ${param.name}${param.required ? '' : '?'}: ${this._getTypeScriptType(param.schema)};\n`;
                 });
                 code += '}\n\n';
             }
@@ -1345,67 +1366,537 @@ export class EnhancedSpecWebviewProvider implements vscode.WebviewViewProvider {
             if (headerParams.length > 0) {
                 code += 'interface HeaderParameters {\n';
                 headerParams.forEach(param => {
-                    code += `  ${param.name}${param.required ? '' : '?'}: ${this._getTypeScriptType(param.schema)};\n`;
+                    const description = param.description ? `  /** ${param.description} */\n` : '';
+                    code += `${description}  ${param.name}${param.required ? '' : '?'}: ${this._getTypeScriptType(param.schema)};\n`;
                 });
                 code += '}\n\n';
             }
         }
 
-        // Request body interface
+        // Request body interface - now properly parsing the schema
         if (endpoint.requestBody) {
-            code += 'interface RequestBody {\n';
-            code += '  // Define based on your request body schema\n';
-            code += '  [key: string]: any;\n';
-            code += '}\n\n';
-        }
-
-        // Response interfaces
-        if (endpoint.responseBodySchemas && Object.keys(endpoint.responseBodySchemas).length > 0) {
-            Object.entries(endpoint.responseBodySchemas).forEach(([status, schema]) => {
-                code += `interface Response${status} {\n`;
-                code += '  // Define based on your response schema\n';
+            const requestBodySchema = this._extractRequestBodySchema(endpoint.requestBody);
+            if (requestBodySchema) {
+                const interfaceContent = this._generateTypeScriptInterface(requestBodySchema, 'RequestBody');
+                code += interfaceContent + '\n\n';
+            } else {
+                code += 'interface RequestBody {\n';
                 code += '  [key: string]: any;\n';
                 code += '}\n\n';
+            }
+        }
+
+        // Response interfaces - now properly parsing the actual response schemas
+        if (endpoint.responseBodySchemas && Object.keys(endpoint.responseBodySchemas).length > 0) {
+            Object.entries(endpoint.responseBodySchemas).forEach(([status, schema]) => {
+                if (schema) {
+                    const interfaceName = `Response${status}`;
+                    const interfaceContent = this._generateTypeScriptInterface(schema, interfaceName);
+                    code += interfaceContent + '\n\n';
+                } else {
+                    code += `interface Response${status} {\n`;
+                    code += '  [key: string]: any;\n';
+                    code += '}\n\n';
+                }
             });
         }
 
+        // Add utility types for the endpoint
+        const operationId = endpoint.operationId || `${endpoint.method.toLowerCase()}${endpoint.path.replace(/[^a-zA-Z0-9]/g, '')}`;
+        code += `// Utility types for this endpoint\n`;
+        code += `export type ${this._capitalize(operationId)}Request = {\n`;
+        if (endpoint.parameters.some(p => p.in === 'path')) {
+            code += `  pathParams: PathParameters;\n`;
+        }
+        if (endpoint.parameters.some(p => p.in === 'query')) {
+            code += `  queryParams?: QueryParameters;\n`;
+        }
+        if (endpoint.parameters.some(p => p.in === 'header')) {
+            code += `  headerParams?: HeaderParameters;\n`;
+        }
+        if (endpoint.requestBody) {
+            code += `  body: RequestBody;\n`;
+        }
+        code += `};\n\n`;
+
+        // Add response union type if multiple responses exist
+        const responseStatuses = Object.keys(endpoint.responseBodySchemas || {});
+        if (responseStatuses.length > 1) {
+            code += `export type ${this._capitalize(operationId)}Response = \n`;
+            code += responseStatuses.map(status => `  Response${status}`).join(' |\n');
+            code += ';\n\n';
+        }
+
         return code;
+    }
+
+    private _extractRequestBodySchema(requestBody: any): any {
+        if (!requestBody || !requestBody.content) return null;
+        
+        // Look for JSON content first
+        const jsonContent = requestBody.content['application/json'];
+        if (jsonContent && jsonContent.schema) {
+            return jsonContent.schema;
+        }
+        
+        // Fall back to first available content type
+        const firstContentType = Object.keys(requestBody.content)[0];
+        if (firstContentType && requestBody.content[firstContentType].schema) {
+            return requestBody.content[firstContentType].schema;
+        }
+        
+        return null;
+    }
+
+    private _generateTypeScriptInterface(schema: any, interfaceName: string): string {
+        if (!schema) {
+            return `interface ${interfaceName} {\n  [key: string]: any;\n}`;
+        }
+
+        // Handle $ref references
+        if (schema.$ref) {
+            const refName = schema.$ref.split('/').pop() || 'any';
+            return `export type ${interfaceName} = ${refName};`;
+        }
+
+        let interfaceContent = `interface ${interfaceName} {\n`;
+
+        if (schema.description) {
+            interfaceContent = `/** ${schema.description} */\n${interfaceContent}`;
+        }
+
+        if (schema.type === 'object' && schema.properties) {
+            Object.entries(schema.properties).forEach(([propName, propSchema]: [string, any]) => {
+                const isRequired = schema.required?.includes(propName) ?? false;
+                const optional = isRequired ? '' : '?';
+                const description = propSchema.description ? `  /** ${propSchema.description} */\n` : '';
+                const propType = this._getDetailedTypeScriptType(propSchema);
+                
+                interfaceContent += `${description}  ${propName}${optional}: ${propType};\n`;
+            });
+        } else if (schema.type === 'array') {
+            // For array responses, create an interface that represents the array type
+            const itemType = this._getDetailedTypeScriptType(schema.items);
+            return `export type ${interfaceName} = ${itemType}[];`;
+        } else {
+            // For primitive or unknown types
+            const primitiveType = this._getDetailedTypeScriptType(schema);
+            return `export type ${interfaceName} = ${primitiveType};`;
+        }
+
+        interfaceContent += '}';
+        return interfaceContent;
+    }
+
+    private _getDetailedTypeScriptType(schema: any): string {
+        if (!schema) return 'any';
+        
+        // Handle $ref references
+        if (schema.$ref) {
+            return schema.$ref.split('/').pop() || 'any';
+        }
+        
+        // Handle enums
+        if (schema.enum) {
+            if (schema.type === 'string') {
+                return schema.enum.map((val: string) => `'${val}'`).join(' | ');
+            } else {
+                return schema.enum.join(' | ');
+            }
+        }
+        
+        switch (schema.type) {
+            case 'string':
+                if (schema.format === 'date' || schema.format === 'date-time') {
+                    return 'string'; // Could be Date if you prefer
+                }
+                return 'string';
+            
+            case 'number':
+            case 'integer':
+                return 'number';
+            
+            case 'boolean':
+                return 'boolean';
+            
+            case 'array':
+                const itemType = this._getDetailedTypeScriptType(schema.items);
+                return `${itemType}[]`;
+            
+            case 'object':
+                if (schema.properties) {
+                    // Inline object type
+                    let objectType = '{\n';
+                    Object.entries(schema.properties).forEach(([propName, propSchema]: [string, any]) => {
+                        const isRequired = schema.required?.includes(propName) ?? false;
+                        const optional = isRequired ? '' : '?';
+                        const propType = this._getDetailedTypeScriptType(propSchema);
+                        objectType += `    ${propName}${optional}: ${propType};\n`;
+                    });
+                    objectType += '  }';
+                    return objectType;
+                } else if (schema.additionalProperties) {
+                    // Record type
+                    const valueType = this._getDetailedTypeScriptType(schema.additionalProperties);
+                    return `Record<string, ${valueType}>`;
+                } else {
+                    return 'Record<string, any>';
+                }
+            
+            default:
+                return 'any';
+        }
+    }
+
+    private _capitalize(str: string): string {
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
     private _generatePythonTypes(endpoint: EnhancedEndpointData): string {
-        let code = `# Types for ${endpoint.method} ${endpoint.path}\n`;
-        code += 'from typing import Optional, Dict, Any\n';
-        code += 'from dataclasses import dataclass\n\n';
+        let code = `# Types for ${endpoint.method.toUpperCase()} ${endpoint.path}\n`;
+        code += 'from typing import Optional, Dict, Any, List, Union\n';
+        code += 'from dataclasses import dataclass\n';
+        code += 'from datetime import datetime\n\n';
 
+        // Request parameters dataclass
         if (endpoint.parameters.length > 0) {
-            code += '@dataclass\n';
-            code += 'class EndpointParameters:\n';
-            endpoint.parameters.forEach(param => {
-                const pythonType = this._getPythonType(param.schema);
-                const optional = param.required ? '' : 'Optional[';
-                const optionalClose = param.required ? '' : ']';
-                code += `    ${param.name}: ${optional}${pythonType}${optionalClose}\n`;
+            const pathParams = endpoint.parameters.filter(p => p.in === 'path');
+            const queryParams = endpoint.parameters.filter(p => p.in === 'query');
+            const headerParams = endpoint.parameters.filter(p => p.in === 'header');
+
+            if (pathParams.length > 0) {
+                code += '@dataclass\n';
+                code += 'class PathParameters:\n';
+                pathParams.forEach(param => {
+                    const pythonType = this._getPythonType(param.schema);
+                    const optional = param.required ? '' : 'Optional[';
+                    const optionalClose = param.required ? '' : ']';
+                    const description = param.description ? `    # ${param.description}\n` : '';
+                    code += `${description}    ${param.name}: ${optional}${pythonType}${optionalClose}\n`;
+                });
+                code += '\n';
+            }
+
+            if (queryParams.length > 0) {
+                code += '@dataclass\n';
+                code += 'class QueryParameters:\n';
+                queryParams.forEach(param => {
+                    const pythonType = this._getPythonType(param.schema);
+                    const optional = param.required ? '' : 'Optional[';
+                    const optionalClose = param.required ? '' : ']';
+                    const description = param.description ? `    # ${param.description}\n` : '';
+                    code += `${description}    ${param.name}: ${optional}${pythonType}${optionalClose}\n`;
+                });
+                code += '\n';
+            }
+
+            if (headerParams.length > 0) {
+                code += '@dataclass\n';
+                code += 'class HeaderParameters:\n';
+                headerParams.forEach(param => {
+                    const pythonType = this._getPythonType(param.schema);
+                    const optional = param.required ? '' : 'Optional[';
+                    const optionalClose = param.required ? '' : ']';
+                    const description = param.description ? `    # ${param.description}\n` : '';
+                    code += `${description}    ${param.name}: ${optional}${pythonType}${optionalClose}\n`;
+                });
+                code += '\n';
+            }
+        }
+
+        // Request body dataclass
+        if (endpoint.requestBody) {
+            const requestBodySchema = this._extractRequestBodySchema(endpoint.requestBody);
+            if (requestBodySchema) {
+                const dataclassContent = this._generatePythonDataclass(requestBodySchema, 'RequestBody');
+                code += dataclassContent + '\n\n';
+            } else {
+                code += '@dataclass\n';
+                code += 'class RequestBody:\n';
+                code += '    # Define based on your request body schema\n';
+                code += '    data: Dict[str, Any]\n\n';
+            }
+        }
+
+        // Response dataclasses
+        if (endpoint.responseBodySchemas && Object.keys(endpoint.responseBodySchemas).length > 0) {
+            Object.entries(endpoint.responseBodySchemas).forEach(([status, schema]) => {
+                if (schema) {
+                    const className = `Response${status}`;
+                    const dataclassContent = this._generatePythonDataclass(schema, className);
+                    code += dataclassContent + '\n\n';
+                } else {
+                    code += `@dataclass\n`;
+                    code += `class Response${status}:\n`;
+                    code += '    # Define based on your response schema\n';
+                    code += '    data: Dict[str, Any]\n\n';
+                }
             });
-            code += '\n';
         }
 
         return code;
     }
 
-    private _generateJavaTypes(endpoint: EnhancedEndpointData): string {
-        let code = `// Types for ${endpoint.method} ${endpoint.path}\n\n`;
+    private _generatePythonDataclass(schema: any, className: string): string {
+        if (!schema) {
+            return `@dataclass\nclass ${className}:\n    data: Dict[str, Any]`;
+        }
+
+        // Handle $ref references
+        if (schema.$ref) {
+            const refName = schema.$ref.split('/').pop() || 'Any';
+            return `# Type alias for ${className}\n${className} = ${refName}`;
+        }
+
+        let classContent = '@dataclass\n';
         
-        if (endpoint.parameters.length > 0) {
-            code += 'public class EndpointParameters {\n';
-            endpoint.parameters.forEach(param => {
-                const javaType = this._getJavaType(param.schema);
-                code += `    private ${javaType} ${param.name};\n`;
+        if (schema.description) {
+            classContent += `class ${className}:\n    """${schema.description}"""\n`;
+        } else {
+            classContent += `class ${className}:\n`;
+        }
+
+        if (schema.type === 'object' && schema.properties) {
+            Object.entries(schema.properties).forEach(([propName, propSchema]: [string, any]) => {
+                const isRequired = schema.required?.includes(propName) ?? false;
+                const pythonType = this._getDetailedPythonType(propSchema);
+                const typeAnnotation = isRequired ? pythonType : `Optional[${pythonType}]`;
+                const description = propSchema.description ? `    # ${propSchema.description}\n` : '';
+                
+                classContent += `${description}    ${propName}: ${typeAnnotation}\n`;
             });
-            code += '\n    // Getters and setters would go here\n';
-            code += '}\n\n';
+        } else if (schema.type === 'array') {
+            // For array responses
+            const itemType = this._getDetailedPythonType(schema.items);
+            return `# Type alias for ${className}\n${className} = List[${itemType}]`;
+        } else {
+            // For primitive or unknown types
+            const primitiveType = this._getDetailedPythonType(schema);
+            return `# Type alias for ${className}\n${className} = ${primitiveType}`;
+        }
+
+        return classContent;
+    }
+
+    private _getDetailedPythonType(schema: any): string {
+        if (!schema) return 'Any';
+        
+        // Handle $ref references
+        if (schema.$ref) {
+            return schema.$ref.split('/').pop() || 'Any';
+        }
+        
+        // Handle enums
+        if (schema.enum) {
+            return 'str';  // Could use Literal types in newer Python versions
+        }
+        
+        switch (schema.type) {
+            case 'string':
+                if (schema.format === 'date' || schema.format === 'date-time') {
+                    return 'datetime';
+                }
+                return 'str';
+            
+            case 'number':
+                return 'float';
+            
+            case 'integer':
+                return 'int';
+            
+            case 'boolean':
+                return 'bool';
+            
+            case 'array':
+                const itemType = this._getDetailedPythonType(schema.items);
+                return `List[${itemType}]`;
+            
+            case 'object':
+                if (schema.properties) {
+                    return 'Dict[str, Any]';  // Could generate nested dataclasses
+                } else {
+                    return 'Dict[str, Any]';
+                }
+            
+            default:
+                return 'Any';
+        }
+    }
+
+    private _generateJavaTypes(endpoint: EnhancedEndpointData): string {
+        let code = `// Types for ${endpoint.method.toUpperCase()} ${endpoint.path}\n\n`;
+        code += 'import java.util.*;\n';
+        code += 'import java.time.LocalDateTime;\n';
+        code += 'import com.fasterxml.jackson.annotation.JsonProperty;\n\n';
+        
+        // Request parameters classes
+        if (endpoint.parameters.length > 0) {
+            const pathParams = endpoint.parameters.filter(p => p.in === 'path');
+            const queryParams = endpoint.parameters.filter(p => p.in === 'query');
+            const headerParams = endpoint.parameters.filter(p => p.in === 'header');
+
+            if (pathParams.length > 0) {
+                code += 'public class PathParameters {\n';
+                pathParams.forEach(param => {
+                    const javaType = this._getJavaType(param.schema);
+                    const description = param.description ? `    // ${param.description}\n` : '';
+                    code += `${description}    @JsonProperty("${param.name}")\n`;
+                    code += `    private ${javaType} ${param.name};\n\n`;
+                });
+                code += '    // Getters and setters would go here\n';
+                code += '}\n\n';
+            }
+
+            if (queryParams.length > 0) {
+                code += 'public class QueryParameters {\n';
+                queryParams.forEach(param => {
+                    const javaType = this._getJavaType(param.schema);
+                    const description = param.description ? `    // ${param.description}\n` : '';
+                    code += `${description}    @JsonProperty("${param.name}")\n`;
+                    code += `    private ${javaType} ${param.name};\n\n`;
+                });
+                code += '    // Getters and setters would go here\n';
+                code += '}\n\n';
+            }
+
+            if (headerParams.length > 0) {
+                code += 'public class HeaderParameters {\n';
+                headerParams.forEach(param => {
+                    const javaType = this._getJavaType(param.schema);
+                    const description = param.description ? `    // ${param.description}\n` : '';
+                    code += `${description}    @JsonProperty("${param.name}")\n`;
+                    code += `    private ${javaType} ${param.name};\n\n`;
+                });
+                code += '    // Getters and setters would go here\n';
+                code += '}\n\n';
+            }
+        }
+
+        // Request body class
+        if (endpoint.requestBody) {
+            const requestBodySchema = this._extractRequestBodySchema(endpoint.requestBody);
+            if (requestBodySchema) {
+                const classContent = this._generateJavaClass(requestBodySchema, 'RequestBody');
+                code += classContent + '\n\n';
+            } else {
+                code += 'public class RequestBody {\n';
+                code += '    // Define based on your request body schema\n';
+                code += '    private Map<String, Object> data;\n\n';
+                code += '    // Getters and setters would go here\n';
+                code += '}\n\n';
+            }
+        }
+
+        // Response classes
+        if (endpoint.responseBodySchemas && Object.keys(endpoint.responseBodySchemas).length > 0) {
+            Object.entries(endpoint.responseBodySchemas).forEach(([status, schema]) => {
+                if (schema) {
+                    const className = `Response${status}`;
+                    const classContent = this._generateJavaClass(schema, className);
+                    code += classContent + '\n\n';
+                } else {
+                    code += `public class Response${status} {\n`;
+                    code += '    // Define based on your response schema\n';
+                    code += '    private Map<String, Object> data;\n\n';
+                    code += '    // Getters and setters would go here\n';
+                    code += '}\n\n';
+                }
+            });
         }
 
         return code;
+    }
+
+    private _generateJavaClass(schema: any, className: string): string {
+        if (!schema) {
+            return `public class ${className} {\n    private Map<String, Object> data;\n\n    // Getters and setters would go here\n}`;
+        }
+
+        // Handle $ref references
+        if (schema.$ref) {
+            const refName = schema.$ref.split('/').pop() || 'Object';
+            return `// Type alias for ${className}\n// public class ${className} extends ${refName} {}`;
+        }
+
+        let classContent = '';
+        
+        if (schema.description) {
+            classContent += `/**\n * ${schema.description}\n */\n`;
+        }
+        
+        classContent += `public class ${className} {\n`;
+
+        if (schema.type === 'object' && schema.properties) {
+            Object.entries(schema.properties).forEach(([propName, propSchema]: [string, any]) => {
+                const javaType = this._getDetailedJavaType(propSchema);
+                const description = propSchema.description ? `    // ${propSchema.description}\n` : '';
+                
+                classContent += `${description}    @JsonProperty("${propName}")\n`;
+                classContent += `    private ${javaType} ${propName};\n\n`;
+            });
+            
+            classContent += '    // Getters and setters would go here\n';
+        } else if (schema.type === 'array') {
+            // For array responses
+            const itemType = this._getDetailedJavaType(schema.items);
+            classContent += `    @JsonProperty("data")\n`;
+            classContent += `    private List<${itemType}> data;\n\n`;
+            classContent += '    // Getters and setters would go here\n';
+        } else {
+            // For primitive or unknown types
+            const primitiveType = this._getDetailedJavaType(schema);
+            classContent += `    @JsonProperty("value")\n`;
+            classContent += `    private ${primitiveType} value;\n\n`;
+            classContent += '    // Getters and setters would go here\n';
+        }
+
+        classContent += '}';
+        return classContent;
+    }
+
+    private _getDetailedJavaType(schema: any): string {
+        if (!schema) return 'Object';
+        
+        // Handle $ref references
+        if (schema.$ref) {
+            return schema.$ref.split('/').pop() || 'Object';
+        }
+        
+        // Handle enums
+        if (schema.enum) {
+            return 'String';  // Could generate enum classes
+        }
+        
+        switch (schema.type) {
+            case 'string':
+                if (schema.format === 'date' || schema.format === 'date-time') {
+                    return 'LocalDateTime';
+                }
+                return 'String';
+            
+            case 'number':
+                return 'Double';
+            
+            case 'integer':
+                return 'Integer';
+            
+            case 'boolean':
+                return 'Boolean';
+            
+            case 'array':
+                const itemType = this._getDetailedJavaType(schema.items);
+                return `List<${itemType}>`;
+            
+            case 'object':
+                if (schema.properties) {
+                    return 'Map<String, Object>';  // Could generate nested classes
+                } else {
+                    return 'Map<String, Object>';
+                }
+            
+            default:
+                return 'Object';
+        }
     }
 
     private _generateGenericTypes(endpoint: EnhancedEndpointData, language: string): string {
