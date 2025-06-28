@@ -6,7 +6,6 @@ import {
   AlertTriangle, 
   Lightbulb, 
   Copy, 
-  ExternalLink, 
   CheckCircle,
   Shield,
   Clock,
@@ -65,15 +64,6 @@ export const EndpointCard: React.FC<EndpointCardProps> = ({ endpoint, view, onSe
       setTimeout(() => setCopiedText(null), 2000);
     } catch (err) {
       console.error('Failed to copy text: ', err);
-    }
-  };
-
-  const handleViewDetails = () => {
-    if (onSelect) {
-      onSelect(endpoint);
-    } else {
-      // If no onSelect handler is provided, toggle expanded state as fallback
-      setIsExpanded(!isExpanded);
     }
   };
 
@@ -354,15 +344,8 @@ export const EndpointCard: React.FC<EndpointCardProps> = ({ endpoint, view, onSe
           {/* Actions */}
           <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
             <button
-              onClick={handleViewDetails}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              <ExternalLink className="h-4 w-4" />
-              View Details
-            </button>
-            <button
               onClick={() => copyToClipboard(endpoint.path, 'path')}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
             >
               {copiedText === 'path' ? (
                 <CheckCircle className="h-4 w-4 text-green-600" />
