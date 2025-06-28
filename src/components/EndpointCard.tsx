@@ -83,6 +83,15 @@ export const EndpointCard: React.FC<EndpointCardProps> = ({ endpoint, view, onSe
     return curl;
   };
 
+  const handleViewDetails = () => {
+    if (onSelect) {
+      onSelect(endpoint);
+    } else {
+      // If no onSelect handler is provided, toggle expanded state as fallback
+      setIsExpanded(!isExpanded);
+    }
+  };
+
   const densityClasses = {
     compact: 'p-3',
     comfortable: 'p-4',
@@ -345,7 +354,7 @@ export const EndpointCard: React.FC<EndpointCardProps> = ({ endpoint, view, onSe
           {/* Actions */}
           <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
             <button
-              onClick={() => onSelect?.(endpoint)}
+              onClick={handleViewDetails}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <ExternalLink className="h-4 w-4" />
