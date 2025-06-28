@@ -484,7 +484,7 @@ export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, on
                       className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
                     >
                       <ExternalLink className="h-4 w-4" />
-                      openapi-explorer.netlify.app
+                      https://spexplorer.org/
                     </a>
                   </div>
 
