@@ -294,6 +294,42 @@ function App() {
               </div>
             </div>
           </div>
+
+          {/* VS Code Extension Highlight */}
+          <div className="mt-8 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
+                <Code className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  🧩 VS Code Extension Available
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-4">
+                  The same powerful OpenAPI analysis engine is available as a VS Code extension. Bring advanced API exploration 
+                  directly into your development environment with OpenAPI Spec Explorer for VS Code.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm rounded-full">
+                    Rich Tree Views
+                  </span>
+                  <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-sm rounded-full">
+                    Code Generation
+                  </span>
+                  <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900 text-violet-800 dark:text-violet-200 text-sm rounded-full">
+                    Performance Optimized
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsMCPOpen(true)}
+                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
+                >
+                  <Code className="h-4 w-4" />
+                  Learn More
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* MCP Instructions Modal */}

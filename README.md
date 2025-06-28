@@ -25,6 +25,13 @@ A powerful OpenAPI specification visualizer with advanced filtering, analytics, 
 - **Real-time Analysis**: Get instant API insights through your AI conversations
 - **Streaming Support**: Server-sent events for real-time updates (HTTP transport)
 
+### 🧩 VS Code Extension
+- **OpenAPI Spec Explorer**: The same powerful engine is available as a VS Code extension
+- **Rich Tree Views**: Browse endpoints and schemas with detailed information
+- **Code Generation**: Generate code examples in multiple languages directly in your editor
+- **Performance Optimized**: Advanced caching and lazy loading for large specifications
+- **Integrated Experience**: Context menus, command palette integration, and inline diagnostics
+
 ### 📊 Visualization & Export
 - **Multiple View Modes**: List, grid, compact, and table layouts
 - **Export Options**: JSON, PDF, CSV, and Markdown formats
@@ -125,6 +132,33 @@ npx openapi-spec-master@latest mcp
 npx openapi-spec-master@latest mcp --http
 # Check health: curl http://localhost:3001/health
 ```
+
+## VS Code Extension
+
+The OpenAPI Spec Explorer for VS Code brings the same powerful analysis engine directly into your development environment.
+
+### Installation
+
+Install from the VS Code Marketplace:
+```
+ext install openapi-spec-explorer
+```
+
+### Key Features
+
+- **Advanced OpenAPI Analysis**: Comprehensive parsing and validation
+- **Rich Tree Views**: Browse endpoints, schemas, and analytics
+- **Code Generation**: Generate examples in multiple languages
+- **TypeScript Types**: Auto-generate interfaces from schemas
+- **Performance Optimized**: Handles large specifications with ease
+
+### Enhanced Features
+
+- **Advanced Search**: Fuzzy search across endpoints, summaries, descriptions, and tags
+- **Smart Filtering**: Filter by HTTP methods, tags, status codes, complexity, and security
+- **Intelligent Grouping**: Group endpoints by tags, methods, paths, or complexity
+- **Rich Analytics**: Real-time statistics with method and tag distribution
+- **Interactive UI**: Modern web-based interface with VS Code theme integration
 
 ## HTTP Transport Features
 

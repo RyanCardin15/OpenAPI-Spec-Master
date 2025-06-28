@@ -9,6 +9,7 @@ interface MCPInstructionsProps {
 export const MCPInstructions: React.FC<MCPInstructionsProps> = ({ isOpen, onClose }) => {
   const [copiedText, setCopiedText] = React.useState<string | null>(null);
   const [isConnectSectionOpen, setIsConnectSectionOpen] = React.useState(false);
+  const [isVSCodeSectionOpen, setIsVSCodeSectionOpen] = React.useState(false);
 
   if (!isOpen) return null;
 
@@ -385,6 +386,169 @@ curl -X POST http://localhost:3001/mcp/execute \\
                 <p className="text-sm text-blue-700 dark:text-blue-300">Export and validate API documentation</p>
               </div>
             </div>
+          </div>
+
+          {/* VS Code Extension Section */}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg">
+            <button
+              onClick={() => setIsVSCodeSectionOpen(!isVSCodeSectionOpen)}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Code className="h-5 w-5 text-purple-600" />
+                VS Code Extension
+              </h3>
+              {isVSCodeSectionOpen ? (
+                <ChevronUp className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
+            
+            {isVSCodeSectionOpen && (
+              <div className="px-4 pb-4 space-y-6">
+                <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
+                      <Code className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-2">
+                        OpenAPI Spec Explorer for VS Code
+                      </h4>
+                      <p className="text-purple-800 dark:text-purple-200 mb-4">
+                        The same powerful OpenAPI analysis engine is available as a VS Code extension, bringing advanced API exploration directly into your development environment.
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <div className="bg-white dark:bg-purple-900/40 p-4 rounded-lg">
+                          <h5 className="font-medium text-purple-900 dark:text-purple-100 mb-2">Key Features</h5>
+                          <ul className="text-sm text-purple-700 dark:text-purple-300 space-y-1">
+                            <li>• Advanced OpenAPI analysis and validation</li>
+                            <li>• Rich tree views for endpoints and schemas</li>
+                            <li>• Code generation in multiple languages</li>
+                            <li>• TypeScript type generation</li>
+                            <li>• Performance-optimized for large specs</li>
+                          </ul>
+                        </div>
+                        <div className="bg-white dark:bg-purple-900/40 p-4 rounded-lg">
+                          <h5 className="font-medium text-purple-900 dark:text-purple-100 mb-2">Installation</h5>
+                          <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">
+                            Install directly from the VS Code Marketplace:
+                          </p>
+                          <code className="text-xs bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 p-2 rounded block">
+                            ext install openapi-spec-explorer
+                          </code>
+                        </div>
+                      </div>
+                      <div className="bg-white dark:bg-purple-900/40 p-4 rounded-lg">
+                        <h5 className="font-medium text-purple-900 dark:text-purple-100 mb-2">Enhanced Features</h5>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <span className="text-sm text-purple-700 dark:text-purple-300">Enhanced Spec View</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <span className="text-sm text-purple-700 dark:text-purple-300">Advanced Search</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <span className="text-sm text-purple-700 dark:text-purple-300">Smart Filtering</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <span className="text-sm text-purple-700 dark:text-purple-300">Intelligent Grouping</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <span className="text-sm text-purple-700 dark:text-purple-300">Rich Analytics</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <span className="text-sm text-purple-700 dark:text-purple-300">Interactive UI</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                    <h5 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <Eye className="h-4 w-4 text-purple-600" />
+                      Integrated Experience
+                    </h5>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                      The VS Code extension provides a seamless experience for developers working with OpenAPI specifications directly in their editor.
+                    </p>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                      <li className="flex items-start gap-2">
+                        <div className="w-5 h-5 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-full flex-shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                        </div>
+                        <span>Context menus for OpenAPI files</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <div className="w-5 h-5 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-full flex-shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                        </div>
+                        <span>Command palette integration</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <div className="w-5 h-5 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-full flex-shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                        </div>
+                        <span>Inline diagnostics and validation</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+                    <h5 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-purple-600" />
+                      Performance Optimizations
+                    </h5>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                      The extension includes advanced performance features for handling large API specifications.
+                    </p>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                      <li className="flex items-start gap-2">
+                        <div className="w-5 h-5 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-full flex-shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                        </div>
+                        <span>Multi-level caching system</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <div className="w-5 h-5 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-full flex-shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                        </div>
+                        <span>Intelligent debouncing</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <div className="w-5 h-5 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-full flex-shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                        </div>
+                        <span>Lazy loading & virtual scrolling</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <div className="w-5 h-5 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-full flex-shrink-0 mt-0.5">
+                          <div className="w-1.5 h-1.5 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                        </div>
+                        <span>Real-time performance monitoring</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    The VS Code extension, web application, and MCP server all share the same powerful OpenAPI analysis engine, 
+                    providing a consistent experience across different environments. Choose the interface that best fits your workflow!
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Available Tools - Enhanced */}
