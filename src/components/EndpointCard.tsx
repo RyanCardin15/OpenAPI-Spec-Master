@@ -68,6 +68,15 @@ export const EndpointCard: React.FC<EndpointCardProps> = ({ endpoint, view, onSe
     }
   };
 
+  const handleViewDetails = () => {
+    if (onSelect) {
+      onSelect(endpoint);
+    } else {
+      // If no onSelect handler is provided, toggle expanded state as fallback
+      setIsExpanded(!isExpanded);
+    }
+  };
+
   const generateCurlExample = () => {
     const method = endpoint.method.toLowerCase();
     let curl = `curl -X ${endpoint.method} "${endpoint.path}"`;
@@ -81,15 +90,6 @@ export const EndpointCard: React.FC<EndpointCardProps> = ({ endpoint, view, onSe
     }
     
     return curl;
-  };
-
-  const handleViewDetails = () => {
-    if (onSelect) {
-      onSelect(endpoint);
-    } else {
-      // If no onSelect handler is provided, toggle expanded state as fallback
-      setIsExpanded(!isExpanded);
-    }
   };
 
   const densityClasses = {
