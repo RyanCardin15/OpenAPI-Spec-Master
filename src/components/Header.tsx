@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-colors"
             >
               <Cpu className="h-4 w-4" />
-              <span className="hidden sm:inline">MCP</span>
+              <span className="hidden sm:inline">Integrations</span>
             </button>
           </div>
 
@@ -184,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="flex items-center gap-3 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors"
               >
                 <Cpu className="h-5 w-5" />
-                MCP Integration
+                Integrations
               </button>
 
               <button className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">

@@ -6,7 +6,7 @@ import { ViewControls } from './components/ViewControls';
 import { EndpointCard } from './components/EndpointCard';
 import { ExportModal } from './components/ExportModal';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { MCPInstructions } from './components/MCPInstructions';
+import { IntegrationsModal } from './components/IntegrationsModal';
 import { SchemaExplorer } from './components/SchemaExplorer';
 import { ValidationCenter } from './components/ValidationCenter';
 import { CodeGenerator } from './components/CodeGenerator';
@@ -27,7 +27,7 @@ function App() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
-  const [isMCPOpen, setIsMCPOpen] = useState(false);
+  const [isIntegrationsOpen, setIsIntegrationsOpen] = useState(false);
   const [isSchemaExplorerOpen, setIsSchemaExplorerOpen] = useState(false);
   const [isValidationCenterOpen, setIsValidationCenterOpen] = useState(false);
   const [isCodeGeneratorOpen, setIsCodeGeneratorOpen] = useState(false);
@@ -258,84 +258,109 @@ function App() {
           {/* Action Buttons */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => setIsMCPOpen(true)}
+              onClick={() => setIsIntegrationsOpen(true)}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-colors font-medium"
             >
               <Cpu className="h-5 w-5" />
-              MCP Integration
+              Explore Integrations
             </button>
           </div>
 
-          {/* MCP Feature Highlight */}
-          <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-                <Cpu className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  🤖 AI-Powered API Analysis
-                </h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  Connect this OpenAPI Explorer to Claude Desktop, Cursor, or other AI clients via Model Context Protocol (MCP). 
-                  Get instant API insights, generate code examples, and validate designs through natural conversation.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm rounded-full">
-                    Load & Analyze APIs
-                  </span>
-                  <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm rounded-full">
-                    Generate Code Examples
-                  </span>
-                  <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-sm rounded-full">
-                    Validate API Design
-                  </span>
+          {/* Ecosystem Highlights */}
+          <div className="mt-12 grid md:grid-cols-3 gap-6">
+            {/* MCP Integration */}
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+                  <Cpu className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    🤖 AI-Powered Analysis
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
+                    Connect to Claude Desktop, Cursor, or other AI clients via Model Context Protocol (MCP). 
+                    Get instant API insights through natural conversation.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                      Load & Analyze APIs
+                    </span>
+                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
+                      Generate Code Examples
+                    </span>
+                    <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                      Validate API Design
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* VS Code Extension Highlight */}
-          <div className="mt-8 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
-                <Code className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  🧩 VS Code Extension Available
-                </h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  The same powerful OpenAPI analysis engine is available as a VS Code extension. Bring advanced API exploration 
-                  directly into your development environment with OpenAPI Spec Explorer for VS Code.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm rounded-full">
-                    Rich Tree Views
-                  </span>
-                  <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-sm rounded-full">
-                    Code Generation
-                  </span>
-                  <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900 text-violet-800 dark:text-violet-200 text-sm rounded-full">
-                    Performance Optimized
-                  </span>
+            {/* VS Code Extension */}
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
+                  <Code className="h-6 w-6 text-white" />
                 </div>
-                <button
-                  onClick={() => setIsMCPOpen(true)}
-                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
-                >
-                  <Code className="h-4 w-4" />
-                  Learn More
-                </button>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    🧩 VS Code Extension
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
+                    The same powerful OpenAPI analysis engine is available as a VS Code extension. Bring advanced API exploration 
+                    directly into your development environment.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
+                      Rich Tree Views
+                    </span>
+                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs rounded-full">
+                      Code Generation
+                    </span>
+                    <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900 text-violet-800 dark:text-violet-200 text-xs rounded-full">
+                      Performance Optimized
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Web Application */}
+            <div className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg">
+                  <Zap className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    🌐 Web Application
+                  </h3>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
+                    You're currently using the web application! This beautiful, responsive interface provides 
+                    intuitive API exploration with advanced filtering and analytics.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                      Beautiful Interface
+                    </span>
+                    <span className="px-3 py-1 bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 text-xs rounded-full">
+                      No Installation
+                    </span>
+                    <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs rounded-full">
+                      Share & Collaborate
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* MCP Instructions Modal */}
-        <MCPInstructions
-          isOpen={isMCPOpen}
-          onClose={() => setIsMCPOpen(false)}
+        {/* Integrations Modal */}
+        <IntegrationsModal
+          isOpen={isIntegrationsOpen}
+          onClose={() => setIsIntegrationsOpen(false)}
         />
       </div>
     );
@@ -351,7 +376,7 @@ function App() {
         onExportClick={() => setIsExportOpen(true)}
         onUploadClick={() => setShowUpload(true)}
         onAnalyticsClick={() => setIsAnalyticsOpen(true)}
-        onMCPClick={() => setIsMCPOpen(true)}
+        onMCPClick={() => setIsIntegrationsOpen(true)}
         searchValue={filters.search}
         onSearchChange={(search) => setFilters({ ...filters, search })}
         isSpecLoaded={!!spec}
@@ -603,9 +628,9 @@ function App() {
         onClose={() => setIsAnalyticsOpen(false)}
       />
 
-      <MCPInstructions
-        isOpen={isMCPOpen}
-        onClose={() => setIsMCPOpen(false)}
+      <IntegrationsModal
+        isOpen={isIntegrationsOpen}
+        onClose={() => setIsIntegrationsOpen(false)}
       />
 
       <SchemaExplorer
