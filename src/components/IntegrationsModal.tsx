@@ -478,7 +478,7 @@ export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, on
                       Access this application from anywhere via the public deployment.
                     </p>
                     <a
-                      href="https://openapi-explorer.netlify.app"
+                      href="https://spexplorer.org/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
