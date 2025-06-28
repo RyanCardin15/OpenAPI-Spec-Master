@@ -196,7 +196,7 @@ function App() {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Advanced Filtering
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm text-center">
                 Multi-dimensional filtering by methods, tags, complexity, security, and more with intelligent search.
               </p>
             </div>
@@ -208,7 +208,7 @@ function App() {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Smart Grouping
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm text-center">
                 Organize endpoints by tags, methods, complexity, or path patterns with flexible sorting options.
               </p>
             </div>
@@ -220,7 +220,7 @@ function App() {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Analytics Dashboard
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm text-center">
                 Comprehensive analytics with distribution charts, complexity analysis, and API health insights.
               </p>
             </div>
@@ -270,87 +270,81 @@ function App() {
           <div className="mt-12 grid md:grid-cols-3 gap-6">
             {/* MCP Integration */}
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+              <div className="flex flex-col items-center text-center">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg mb-4">
                   <Cpu className="h-6 w-6 text-white" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    🤖 AI-Powered Analysis
-                  </h3>
-                  <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
-                    Connect to Claude Desktop, Cursor, or other AI clients via Model Context Protocol (MCP). 
-                    Get instant API insights through natural conversation.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                      Load & Analyze APIs
-                    </span>
-                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
-                      Generate Code Examples
-                    </span>
-                    <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
-                      Validate API Design
-                    </span>
-                  </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  🤖 AI-Powered Analysis
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
+                  Connect to Claude Desktop, Cursor, or other AI clients via Model Context Protocol (MCP). 
+                  Get instant API insights through natural conversation.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                    Load & Analyze APIs
+                  </span>
+                  <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
+                    Generate Code Examples
+                  </span>
+                  <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                    Validate API Design
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* VS Code Extension */}
             <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-6">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
+              <div className="flex flex-col items-center text-center">
+                <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg mb-4">
                   <Code className="h-6 w-6 text-white" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    🧩 VS Code Extension
-                  </h3>
-                  <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
-                    The same powerful OpenAPI analysis engine is available as a VS Code extension. Bring advanced API exploration 
-                    directly into your development environment.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
-                      Rich Tree Views
-                    </span>
-                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs rounded-full">
-                      Code Generation
-                    </span>
-                    <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900 text-violet-800 dark:text-violet-200 text-xs rounded-full">
-                      Performance Optimized
-                    </span>
-                  </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  🧩 VS Code Extension
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
+                  The same powerful OpenAPI analysis engine is available as a VS Code extension. Bring advanced API exploration 
+                  directly into your development environment.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
+                    Rich Tree Views
+                  </span>
+                  <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs rounded-full">
+                    Code Generation
+                  </span>
+                  <span className="px-3 py-1 bg-violet-100 dark:bg-violet-900 text-violet-800 dark:text-violet-200 text-xs rounded-full">
+                    Performance Optimized
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Web Application */}
             <div className="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg">
+              <div className="flex flex-col items-center text-center">
+                <div className="p-3 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg mb-4">
                   <Zap className="h-6 w-6 text-white" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    🌐 Web Application
-                  </h3>
-                  <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
-                    You're currently using the web application! This beautiful, responsive interface provides 
-                    intuitive API exploration with advanced filtering and analytics.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
-                      Beautiful Interface
-                    </span>
-                    <span className="px-3 py-1 bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 text-xs rounded-full">
-                      No Installation
-                    </span>
-                    <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs rounded-full">
-                      Share & Collaborate
-                    </span>
-                  </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  🌐 Web Application
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm">
+                  You're currently using the web application! This beautiful, responsive interface provides 
+                  intuitive API exploration with advanced filtering and analytics.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                    Beautiful Interface
+                  </span>
+                  <span className="px-3 py-1 bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 text-xs rounded-full">
+                    No Installation
+                  </span>
+                  <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-xs rounded-full">
+                    Share & Collaborate
+                  </span>
                 </div>
               </div>
             </div>
