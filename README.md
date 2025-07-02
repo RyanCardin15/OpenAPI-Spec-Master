@@ -35,6 +35,7 @@ A powerful, professional-grade OpenAPI specification analyzer with advanced AI i
 - **AI Suggestions**: Context-aware recommendations for API improvements
 
 ### 🤖 MCP Server Integration
+- **One-Click Cursor Installation**: Native deeplink support for instant Cursor IDE setup
 - **Dual Transport Support**: Both stdio and HTTP transport options
 - **AI Client Connectivity**: Connect to Claude Desktop, Cursor, and other MCP-compatible clients
 - **16 Powerful Tools**: Comprehensive suite for API analysis, development, validation, and optimization
@@ -80,8 +81,17 @@ npm install -g openapi-spec-master
 
 ### 🤖 MCP Server Setup
 
-#### Option A: NPX (Recommended)
-Easy one-command setup - no installation required!
+#### Option A: Cursor Deeplink (Easiest!) 🆕
+**One-click installation for Cursor users:**
+
+**For stdio transport (recommended):**
+[**🚀 Add OpenAPI Spec Master to Cursor**](cursor://anysphere.cursor-deeplink/mcp/install?name=openapi-spec-master&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJvcGVuYXBpLXNwZWMtbWFzdGVyQGxhdGVzdCIsICJtY3AiXX0=)
+
+> **Note:** Deeplinks require Cursor IDE. For other AI tools, use the manual configuration below.  
+> Learn more about [Cursor Deeplinks](https://docs.cursor.com/deeplinks)
+
+#### Option B: NPX (Manual Configuration)
+Easy setup for Claude Desktop and other MCP-compatible clients:
 
 **Configure Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 ```json
@@ -107,7 +117,7 @@ Easy one-command setup - no installation required!
 }
 ```
 
-#### Option B: Local Development
+#### Option C: Local Development
 For development or customization:
 
 1. Clone the repository
