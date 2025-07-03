@@ -6,14 +6,26 @@ export const generatePython = (schemaName: string, schema: any): string => {
     number: 'float',
     integer: 'int',
     boolean: 'bool',
-    array: 'list',
     object: 'dict',
+  };
+
+  const getType = (prop: any): string => {
+    if (prop.$ref) {
+      return prop.$ref.split('/').pop() || 'Any';
+    }
+    if (prop.type === 'array') {
+      if (prop.items) {
+        return `List[${getType(prop.items)}]`;
+      }
+      return 'List';
+    }
+    return typeMap[prop.type] || 'Any';
   };
 
   const generateProperties = (properties: any) => {
     return Object.entries(properties)
       .map(([key, value]: [string, any]) => {
-        const type = typeMap[value.type] || 'any';
+        const type = getType(value);
         return `    ${key}: ${type}`;
       })
       .join('\n');
@@ -21,5 +33,5 @@ export const generatePython = (schemaName: string, schema: any): string => {
 
   const properties = schema.properties ? generateProperties(schema.properties) : '    pass';
 
-  return `${classDef}${properties}`;
+  return `from typing import List, Any, Dict\n\n${classDef}${properties}`;
 }; 

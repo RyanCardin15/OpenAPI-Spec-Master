@@ -3,6 +3,7 @@ import { X, Copy, Download } from 'lucide-react';
 import { generateTypeScript } from '../utils/generateTypeScript';
 import { generatePython } from '../utils/generatePython';
 import { generateJava } from '../utils/generateJava';
+import { generateCSharp } from '../utils/generateCSharp';
 
 interface SchemaExportModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ export const SchemaExportModal: React.FC<SchemaExportModalProps> = ({ isOpen, on
       setGeneratedCode(generatePython(schemaName, schema));
     } else if (language === 'java') {
       setGeneratedCode(generateJava(schemaName, schema));
+    } else if (language === 'csharp') {
+      setGeneratedCode(generateCSharp(schemaName, schema));
     } else {
       setGeneratedCode(`// ${language} code generation not implemented yet`);
     }
@@ -54,6 +57,7 @@ export const SchemaExportModal: React.FC<SchemaExportModalProps> = ({ isOpen, on
             <option value="typescript">TypeScript</option>
             <option value="python">Python</option>
             <option value="java">Java</option>
+            <option value="csharp">C#</option>
           </select>
           <div className="bg-gray-900 text-white p-4 rounded-lg font-mono text-sm overflow-x-auto">
             <pre>
