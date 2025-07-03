@@ -9,6 +9,7 @@ import {
   CheckCircle, 
   ChevronDown, 
   ChevronRight,
+  ChevronLeft,
   Hash,
   Type,
   FileText,
@@ -137,6 +138,29 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
   const [editingSchema, setEditingSchema] = useState<string | null>(null);
   const [editedCode, setEditedCode] = useState('');
   const [localSpec, setLocalSpec] = useState<OpenAPISpec | null>(spec);
+
+  const AdvancedFilterControls = () => (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as any)}
+          className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600"
+        >
+          <option value="name">Sort by Name</option>
+          <option value="complexity">Sort by Complexity</option>
+          <option value="usage">Sort by Usage</option>
+          <option value="dependencies">Sort by Dependencies</option>
+        </select>
+        <button
+          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+          className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+        >
+          {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
 
   // Performance state
   const searchRef = useRef<HTMLInputElement>(null);
@@ -1082,13 +1106,13 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
   if (!isOpen || !spec) return null;
 
   return (
-    <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 ${isMaximized ? 'p-0' : ''}`}>
-      <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-2xl flex flex-col ${
-        isMaximized ? 'w-full h-full rounded-none' : 'w-full max-w-7xl h-[95vh]'
+    <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-0 md:p-4 ${isMaximized ? 'p-0' : ''}`}>
+      <div className={`bg-white dark:bg-gray-800 md:rounded-xl shadow-2xl flex flex-col ${
+        isMaximized ? 'w-full h-full rounded-none' : 'w-full h-full md:w-full md:max-w-7xl md:h-[95vh]'
       }`}>
         {/* Enhanced Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="flex items-center gap-3 md:gap-4">
             <div className="relative">
               <div className="p-3 bg-gradient-to-br from-blue-500 via-purple-600 to-blue-700 rounded-xl shadow-lg">
                 <Database className="h-6 w-6 text-white" />
@@ -1096,20 +1120,20 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 animate-pulse"></div>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
                 Advanced Schema Explorer
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
                 {schemaNames.length} schemas • {searchProperties.length} properties • 
                 {Array.from(selectedSchemas).length} selected
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
             <button
               onClick={() => setIsMaximized(!isMaximized)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="hidden md:block p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title={isMaximized ? "Restore" : "Maximize"}
             >
               {isMaximized ? (
@@ -1257,9 +1281,9 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
 
           {/* Explorer Tab - Enhanced */}
           {activeTab === 'explorer' && (
-            <div className="h-full flex">
+            <div className="h-full flex flex-col md:flex-row">
               {/* Enhanced Sidebar */}
-              <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800">
+              <div className={`w-full md:w-80 border-r-0 md:border-r border-gray-200 dark:border-gray-700 flex-col bg-white dark:bg-gray-800 ${selectedSchema ? 'hidden md:flex' : 'flex'}`}>
                 {/* Search and Filters */}
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-4">
                   {/* Enhanced Search with AI */}
@@ -1386,25 +1410,8 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                   
                   {/* Advanced Filters */}
                   {showAdvancedFilters && (
-                    <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex gap-2">
-                        <select
-                          value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value as any)}
-                          className="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600"
-                        >
-                          <option value="name">Sort by Name</option>
-                          <option value="complexity">Sort by Complexity</option>
-                          <option value="usage">Sort by Usage</option>
-                          <option value="dependencies">Sort by Dependencies</option>
-                        </select>
-                        <button
-                          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                          className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
-                        </button>
-                      </div>
+                    <div className="hidden md:block space-y-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <AdvancedFilterControls />
                     </div>
                   )}
                 </div>
@@ -1413,7 +1420,6 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                 <div 
                   ref={scrollElementRef}
                   className="flex-1 overflow-y-auto"
-                  style={{ height: 600 }}
                 >
                   <div style={{ height: totalHeight, position: 'relative' }} className="p-4">
                     {visibleSchemas.map(({ data: schemaName, offset }) => {
@@ -1486,14 +1492,20 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               </div>
 
               {/* Schema Details */}
-              <div className="flex-1 flex flex-col bg-white dark:bg-gray-800">
+              <div className={`flex-1 flex flex-col bg-white dark:bg-gray-800 ${selectedSchema ? 'flex' : 'hidden md:flex'}`}>
                 {selectedSchema ? (
                   <>
                     {/* Schema Header */}
-                    <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                          <button
+                            onClick={() => setSelectedSchema(null)}
+                            className="block md:hidden p-2 -ml-2 text-gray-600 dark:text-gray-400"
+                          >
+                            <ChevronLeft className="h-5 w-5" />
+                          </button>
+                          <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
                             {selectedSchema}
                           </h3>
                           {schemaMetrics.get(selectedSchema)?.circularRefs && (
@@ -1534,19 +1546,19 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                         return (
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                              <p className="text-2xl font-bold text-blue-600">{metrics.complexity}</p>
+                              <p className="text-lg md:text-2xl font-bold text-blue-600">{metrics.complexity}</p>
                               <p className="text-xs text-gray-600 dark:text-gray-400">Complexity</p>
                             </div>
                             <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                              <p className="text-2xl font-bold text-green-600">{metrics.propertyCount}</p>
+                              <p className="text-lg md:text-2xl font-bold text-green-600">{metrics.propertyCount}</p>
                               <p className="text-xs text-gray-600 dark:text-gray-400">Properties</p>
                             </div>
                             <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                              <p className="text-2xl font-bold text-purple-600">{metrics.dependencyCount}</p>
+                              <p className="text-lg md:text-2xl font-bold text-purple-600">{metrics.dependencyCount}</p>
                               <p className="text-xs text-gray-600 dark:text-gray-400">Dependencies</p>
                             </div>
                             <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                              <p className="text-2xl font-bold text-orange-600">{metrics.depth}</p>
+                              <p className="text-lg md:text-2xl font-bold text-orange-600">{metrics.depth}</p>
                               <p className="text-xs text-gray-600 dark:text-gray-400">Max Depth</p>
                             </div>
                           </div>
@@ -1578,7 +1590,7 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                     </div>
                     
                     {/* Schema Content */}
-                    <div className="flex-1 overflow-y-auto p-6">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
                       <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
                         <pre className="text-green-400 text-sm">
                           <code>{JSON.stringify(schemas[selectedSchema], null, 2)}</code>
@@ -1587,8 +1599,8 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                    <div className="text-center">
+                  <div className="flex-1 flex items-center justify-center text-center text-gray-500 dark:text-gray-400 p-4">
+                    <div>
                       <Database className="h-16 w-16 mx-auto mb-4 opacity-50" />
                       <p className="text-lg font-medium">Select a schema to explore</p>
                       <p className="text-sm">Choose from {schemaNames.length} available schemas</p>
@@ -1713,84 +1725,86 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                         <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">
                           Schema Details Comparison
                         </h4>
-                        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${selectedSchemas.size}, 1fr)` }}>
-                          {compareSchemas(Array.from(selectedSchemas)).map((comparison, index) => (
-                            <div key={comparison.name} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                              {/* Schema Header */}
-                              <div className="mb-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Type className="h-4 w-4 text-blue-600" />
-                                  <h5 className="font-semibold text-gray-900 dark:text-white truncate">
-                                    {comparison.name}
-                                  </h5>
-                                  {index === 0 && (
-                                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                                      Base
-                                    </span>
+                        <div className="overflow-x-auto pb-4">
+                          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${selectedSchemas.size}, 1fr)`, minWidth: `${Math.max(2, selectedSchemas.size) * 280}px` }}>
+                            {compareSchemas(Array.from(selectedSchemas)).map((comparison, index) => (
+                              <div key={comparison.name} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                                {/* Schema Header */}
+                                <div className="mb-4">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Type className="h-4 w-4 text-blue-600" />
+                                    <h5 className="font-semibold text-gray-900 dark:text-white truncate">
+                                      {comparison.name}
+                                    </h5>
+                                    {index === 0 && (
+                                      <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                                        Base
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Metrics */}
+                                  {comparison.metrics && (
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                      <div className="text-gray-600 dark:text-gray-400">
+                                        Complexity: <span className="font-medium text-gray-900 dark:text-white">{comparison.metrics.complexity}</span>
+                                      </div>
+                                      <div className="text-gray-600 dark:text-gray-400">
+                                        Properties: <span className="font-medium text-gray-900 dark:text-white">{comparison.metrics.propertyCount}</span>
+                                      </div>
+                                      <div className="text-gray-600 dark:text-gray-400">
+                                        Required: <span className="font-medium text-gray-900 dark:text-white">{comparison.metrics.requiredCount}</span>
+                                      </div>
+                                      <div className="text-gray-600 dark:text-gray-400">
+                                        Deps: <span className="font-medium text-gray-900 dark:text-white">{comparison.metrics.dependencyCount}</span>
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                                 
-                                {/* Metrics */}
-                                {comparison.metrics && (
-                                  <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <div className="text-gray-600 dark:text-gray-400">
-                                      Complexity: <span className="font-medium text-gray-900 dark:text-white">{comparison.metrics.complexity}</span>
-                                    </div>
-                                    <div className="text-gray-600 dark:text-gray-400">
-                                      Properties: <span className="font-medium text-gray-900 dark:text-white">{comparison.metrics.propertyCount}</span>
-                                    </div>
-                                    <div className="text-gray-600 dark:text-gray-400">
-                                      Required: <span className="font-medium text-gray-900 dark:text-white">{comparison.metrics.requiredCount}</span>
-                                    </div>
-                                    <div className="text-gray-600 dark:text-gray-400">
-                                      Deps: <span className="font-medium text-gray-900 dark:text-white">{comparison.metrics.dependencyCount}</span>
-                                    </div>
+                                {/* Differences */}
+                                {comparison.differences.length > 0 && (
+                                  <div className="mb-4">
+                                    <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                                      Differences from Base:
+                                    </h6>
+                                    <ul className="space-y-1">
+                                      {comparison.differences.map((diff, i) => (
+                                        <li key={i} className="text-xs text-red-600 dark:text-red-400 flex items-start gap-1">
+                                          <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                                          {diff}
+                                        </li>
+                                      ))}
+                                    </ul>
                                   </div>
                                 )}
-                              </div>
-                              
-                              {/* Differences */}
-                              {comparison.differences.length > 0 && (
-                                <div className="mb-4">
+                                
+                                {/* Properties Sample */}
+                                <div>
                                   <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                                    Differences from Base:
+                                    Properties ({comparison.properties.length}):
                                   </h6>
-                                  <ul className="space-y-1">
-                                    {comparison.differences.map((diff, i) => (
-                                      <li key={i} className="text-xs text-red-600 dark:text-red-400 flex items-start gap-1">
-                                        <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                                        {diff}
-                                      </li>
+                                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                                    {comparison.properties.slice(0, 10).map(prop => (
+                                      <div key={prop.property} className="flex items-center justify-between text-xs">
+                                        <span className={`truncate ${prop.required ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                                          {prop.property}
+                                        </span>
+                                        <span className="text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
+                                          {prop.type}
+                                        </span>
+                                      </div>
                                     ))}
-                                  </ul>
-                                </div>
-                              )}
-                              
-                              {/* Properties Sample */}
-                              <div>
-                                <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                                  Properties ({comparison.properties.length}):
-                                </h6>
-                                <div className="space-y-1 max-h-32 overflow-y-auto">
-                                  {comparison.properties.slice(0, 10).map(prop => (
-                                    <div key={prop.property} className="flex items-center justify-between text-xs">
-                                      <span className={`truncate ${prop.required ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
-                                        {prop.property}
-                                      </span>
-                                      <span className="text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
-                                        {prop.type}
-                                      </span>
-                                    </div>
-                                  ))}
-                                  {comparison.properties.length > 10 && (
-                                    <div className="text-xs text-gray-500 dark:text-gray-400 italic">
-                                      +{comparison.properties.length - 10} more...
-                                    </div>
-                                  )}
+                                    {comparison.properties.length > 10 && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                        +{comparison.properties.length - 10} more...
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2390,7 +2404,7 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                     <Network className="h-5 w-5 text-blue-600" />
                     Schema Relationship Graph
                   </h3>
-                  <div className="h-[600px] w-full bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
+                  <div className="h-[80vh] md:h-[600px] w-full bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
                     <DependencyTreeVisualization schemas={schemas} dependencyMap={findSchemaDependencies} />
                   </div>
                 </div>
@@ -2461,6 +2475,29 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
           )}
         </div>
       </div>
+
+      {/* Mobile Bottom Sheet for Advanced Filters */}
+      {showAdvancedFilters && (
+        <div className="md:hidden fixed inset-0 bg-black bg-opacity-30 z-50 flex items-end" onClick={() => setShowAdvancedFilters(false)}>
+          <div className="w-full bg-white dark:bg-gray-800 rounded-t-2xl p-4 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="text-lg font-semibold">Advanced Filters</h4>
+              <button onClick={() => setShowAdvancedFilters(false)}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <AdvancedFilterControls />
+              <button 
+                onClick={() => setShowAdvancedFilters(false)} 
+                className="w-full bg-blue-600 text-white py-2 rounded-lg"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
