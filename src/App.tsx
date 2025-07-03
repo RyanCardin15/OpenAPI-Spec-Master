@@ -660,7 +660,6 @@ function App() {
         searchValue={filters.search}
         onSearchChange={(search) => setFilters({ ...filters, search })}
         isSpecLoaded={!!spec}
-
       />
 
       <div className="flex min-h-0">
@@ -737,9 +736,10 @@ function App() {
                     <span className="xs:hidden sm:inline">Validate</span>
                   </button>
                   <button
-                    onClick={() => setIsSchemaExplorerOpen(true)}
-                    {...preloadSchemas}
-                    className="touch-target-sm flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm font-medium focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+                    onClick={() => spec && setIsSchemaExplorerOpen(true)}
+                    onMouseEnter={preloadSchemas.onMouseEnter}
+                    disabled={!spec}
+                    className="touch-target-sm flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm font-medium focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Open schema explorer"
                   >
                     <Layers className="h-4 w-4" />
@@ -766,13 +766,13 @@ function App() {
                 <div className="flex gap-2">
                   <button
                     onClick={expandAllGroups}
-                    className="touch-target-sm px-3 py-1.5 text-sm bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="touch-target-sm px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white dark:text-white rounded-lg transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-md border border-blue-700"
                   >
                     Expand All
                   </button>
                   <button
                     onClick={collapseAllGroups}
-                    className="touch-target-sm px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                    className="touch-target-sm px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-700 dark:bg-gray-600 dark:hover:bg-gray-700 text-white dark:text-white rounded-lg transition-colors focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 shadow-md border border-gray-700"
                   >
                     Collapse All
                   </button>

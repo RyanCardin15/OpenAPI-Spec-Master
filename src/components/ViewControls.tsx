@@ -80,8 +80,8 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
                   className={`
                     flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-all touch-target-sm
                     ${isActive 
-                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm' 
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                      ? 'bg-blue-600 dark:bg-blue-600 text-white dark:text-white shadow-md border border-blue-700' 
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }
                   `}
                   title={option.description}
@@ -192,8 +192,8 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
             className={`
               flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors touch-target-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
               ${view.showDetails 
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white shadow-md border border-blue-700' 
+                : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600'
               }
             `}
             aria-pressed={view.showDetails}
@@ -213,8 +213,8 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
             className={`
               flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors touch-target-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
               ${view.showBusinessContext 
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white shadow-md border border-blue-700' 
+                : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600'
               }
             `}
             aria-pressed={view.showBusinessContext}
@@ -229,8 +229,8 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
             className={`
               flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors touch-target-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
               ${view.showAISuggestions 
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white shadow-md border border-blue-700' 
+                : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600'
               }
             `}
             aria-pressed={view.showAISuggestions}
@@ -245,8 +245,8 @@ export const ViewControls: React.FC<ViewControlsProps> = ({
             className={`
               flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors touch-target-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
               ${view.showCodeExamples 
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white shadow-md border border-blue-700' 
+                : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600'
               }
             `}
             aria-pressed={view.showCodeExamples}
