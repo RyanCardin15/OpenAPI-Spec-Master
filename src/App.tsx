@@ -26,9 +26,13 @@ import { OpenAPIStreamingParser } from './utils/streaming-parser';
 import { useMemoryOptimization } from './utils/memory-optimizer';
 import { OpenAPISpec, EndpointData, FilterState, GroupingState, ViewState } from './types/openapi';
 import { Zap, FileText, Search, BarChart3, ChevronDown, Shield, Code, ChevronUp, Layers, GitBranch, Users, RotateCcw } from 'lucide-react';
+import { SchemaExplorer } from './components/SchemaExplorer';
+import testSpec from '../test-openapi.json';
+import { produce } from 'immer';
 
 function App() {
   const [spec, setSpec] = useState<OpenAPISpec | null>(null);
+  const [allSpecs, setAllSpecs] = useState<OpenAPISpec[]>([]);
   const [endpoints, setEndpoints] = useState<EndpointData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -736,7 +740,7 @@ function App() {
                     <span className="xs:hidden sm:inline">Validate</span>
                   </button>
                   <button
-                    onClick={() => spec && setIsSchemaExplorerOpen(true)}
+                    onClick={() => setIsSchemaExplorerOpen(true)}
                     onMouseEnter={preloadSchemas.onMouseEnter}
                     disabled={!spec}
                     className="touch-target-sm flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm font-medium focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -959,10 +963,11 @@ function App() {
       )}
 
       {isSchemaExplorerOpen && (
-        <LazySchemaExplorer
+        <SchemaExplorer
+          spec={spec}
+          allSpecs={allSpecs}
           isOpen={isSchemaExplorerOpen}
           onClose={() => setIsSchemaExplorerOpen(false)}
-          spec={spec}
         />
       )}
 
