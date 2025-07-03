@@ -6,13 +6,15 @@ interface FileUploadProps {
   onTextUpload: (text: string) => void;
   onUrlUpload: (url: string) => void;
   isLoading?: boolean;
+  parseProgress?: { progress: number; message: string } | null;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ 
   onFileUpload, 
   onTextUpload, 
   onUrlUpload, 
-  isLoading 
+  isLoading,
+  parseProgress
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [activeTab, setActiveTab] = useState<'file' | 'text' | 'url'>('file');
@@ -142,6 +144,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       className="bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 sm:p-8"
       aria-label="OpenAPI specification upload"
     >
+      {/* Progress Display */}
+      {parseProgress && (
+        <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              {parseProgress.message}
+            </span>
+            <span className="text-sm text-blue-600 dark:text-blue-400">
+              {Math.round(parseProgress.progress)}%
+            </span>
+          </div>
+          <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+            <div
+              className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${parseProgress.progress}%` }}
+              role="progressbar"
+              aria-valuenow={parseProgress.progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Parsing progress: ${Math.round(parseProgress.progress)}%`}
+            />
+          </div>
+        </div>
+      )}
       {/* Tab Navigation */}
       <nav className="flex justify-center mb-6 sm:mb-8" role="tablist" aria-label="Upload methods">
         <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">

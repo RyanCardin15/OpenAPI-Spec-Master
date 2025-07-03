@@ -1,13 +1,23 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import Fuse from 'fuse.js';
 import { EndpointData, FilterState, GroupingState } from '../types/openapi';
+import { useAdvancedCache, globalCaches, cacheKeys } from '../utils/cache-manager';
 
 export function useAdvancedSearch(
   endpoints: EndpointData[], 
   filters: FilterState,
   grouping: GroupingState
 ) {
+  // Initialize caching for different data types
+  const searchCache = useAdvancedCache('search');
+  const filterCache = useAdvancedCache('filter');
+  const groupingCache = useAdvancedCache('grouping');
+
+  // Memoized Fuse instance with cache invalidation
   const fuse = useMemo(() => {
+    // Clear search cache when endpoints change
+    searchCache.clear();
+    
     return new Fuse(endpoints, {
       keys: [
         { name: 'path', weight: 0.3 },
@@ -17,18 +27,45 @@ export function useAdvancedSearch(
         { name: 'businessContext', weight: 0.1 }
       ],
       threshold: 0.4,
-      includeScore: true
+      includeScore: true,
+      includeMatches: true // Include match information for better caching
     });
-  }, [endpoints]);
+  }, [endpoints, searchCache]);
 
-  const filteredEndpoints = useMemo(() => {
-    let result = endpoints;
+  // Cached search function
+  const performSearch = useCallback((searchQuery: string): EndpointData[] => {
+    if (!searchQuery.trim()) return endpoints;
+    
+    const cacheKey = cacheKeys.search(searchQuery, {});
+    
+    // Check cache first
+    const cached = searchCache.get<EndpointData[]>(cacheKey);
+    if (cached) return cached;
+    
+    // Perform search
+    const searchResults = fuse.search(searchQuery);
+    const result = searchResults.map(item => item.item);
+    
+    // Cache results with dependencies
+    searchCache.set(cacheKey, result, {
+      ttl: 300000, // 5 minutes
+      dependencies: ['endpoints']
+    });
+    
+    return result;
+  }, [endpoints, fuse, searchCache]);
 
-    // Apply search filter
-    if (filters.search.trim()) {
-      const searchResults = fuse.search(filters.search);
-      result = searchResults.map(item => item.item);
-    }
+  // Cached filtering function
+  const applyFilters = useCallback((baseEndpoints: EndpointData[]): EndpointData[] => {
+    // Create cache key from filters
+    const filterKey = cacheKeys.filter(baseEndpoints, filters);
+    
+    // Check cache first
+    const cached = filterCache.get<EndpointData[]>(filterKey);
+    if (cached) return cached;
+    
+    // Start with base endpoints
+    let result = baseEndpoints;
 
     // Apply method filter
     if (filters.methods.length > 0) {
@@ -110,11 +147,36 @@ export function useAdvancedSearch(
       );
     }
 
-    return result;
-  }, [endpoints, filters, fuse]);
+    // Cache the filtered results
+    filterCache.set(filterKey, result, {
+      ttl: 600000, // 10 minutes
+      dependencies: ['endpoints', 'filters']
+    });
 
-  const sortedEndpoints = useMemo(() => {
-    const sorted = [...filteredEndpoints].sort((a, b) => {
+    return result;
+  }, [filters, filterCache]);
+
+  const filteredEndpoints = useMemo(() => {
+    // Invalidate caches when endpoints change
+    if (endpoints.length > 0) {
+      filterCache.invalidate('endpoints');
+      groupingCache.invalidate('endpoints');
+    }
+
+    // First apply search, then apply filters
+    const searchResults = performSearch(filters.search);
+    return applyFilters(searchResults);
+  }, [endpoints, filters, performSearch, applyFilters, filterCache, groupingCache]);
+
+  // Cached sorting function
+  const sortEndpoints = useCallback((endpointsToSort: EndpointData[]): EndpointData[] => {
+    const sortKey = `sort:${grouping.sortBy}:${grouping.sortOrder}:${endpointsToSort.length}`;
+    
+    // Check cache first
+    const cached = groupingCache.get<EndpointData[]>(sortKey);
+    if (cached) return cached;
+
+    const sorted = [...endpointsToSort].sort((a, b) => {
       let comparison = 0;
       
       switch (grouping.sortBy) {
@@ -142,18 +204,40 @@ export function useAdvancedSearch(
       return grouping.sortOrder === 'desc' ? -comparison : comparison;
     });
 
-    return sorted;
-  }, [filteredEndpoints, grouping]);
+    // Cache sorted results
+    groupingCache.set(sortKey, sorted, {
+      ttl: 300000, // 5 minutes
+      dependencies: ['sorting', 'endpoints']
+    });
 
-  const groupedEndpoints = useMemo(() => {
+    return sorted;
+  }, [grouping, groupingCache]);
+
+  const sortedEndpoints = useMemo(() => {
+    return sortEndpoints(filteredEndpoints);
+  }, [filteredEndpoints, sortEndpoints]);
+
+  // Cached grouping function  
+  const groupEndpoints = useCallback((endpointsToGroup: EndpointData[]): { [key: string]: EndpointData[] } => {
+    const groupKey = `group:${grouping.groupBy}:${endpointsToGroup.length}`;
+    
+    // Check cache first
+    const cached = groupingCache.get<{ [key: string]: EndpointData[] }>(groupKey);
+    if (cached) return cached;
+
     if (grouping.groupBy === 'none') {
-      return { 'All Endpoints': sortedEndpoints };
+      const result = { 'All Endpoints': endpointsToGroup };
+      groupingCache.set(groupKey, result, {
+        ttl: 300000, // 5 minutes
+        dependencies: ['grouping', 'endpoints']
+      });
+      return result;
     }
 
     const groups: { [key: string]: EndpointData[] } = {};
 
-    sortedEndpoints.forEach(endpoint => {
-      let groupKey = 'Other';
+    endpointsToGroup.forEach(endpoint => {
+      let groupKeyName = 'Other';
 
       switch (grouping.groupBy) {
         case 'tag':
@@ -164,34 +248,44 @@ export function useAdvancedSearch(
             });
             return;
           }
-          groupKey = 'Untagged';
+          groupKeyName = 'Untagged';
           break;
         case 'method':
-          groupKey = endpoint.method;
+          groupKeyName = endpoint.method;
           break;
         case 'path':
           const pathSegments = endpoint.path.split('/').filter(Boolean);
-          groupKey = pathSegments.length > 0 ? `/${pathSegments[0]}` : '/';
+          groupKeyName = pathSegments.length > 0 ? `/${pathSegments[0]}` : '/';
           break;
         case 'complexity':
-          groupKey = endpoint.complexity ? endpoint.complexity.charAt(0).toUpperCase() + endpoint.complexity.slice(1) : 'Unknown';
+          groupKeyName = endpoint.complexity ? endpoint.complexity.charAt(0).toUpperCase() + endpoint.complexity.slice(1) : 'Unknown';
           break;
         case 'security':
           if (endpoint.security && endpoint.security.length > 0) {
             const securityTypes = endpoint.security.flatMap(sec => Object.keys(sec));
-            groupKey = securityTypes.length > 0 ? securityTypes[0] : 'None';
+            groupKeyName = securityTypes.length > 0 ? securityTypes[0] : 'None';
           } else {
-            groupKey = 'None';
+            groupKeyName = 'None';
           }
           break;
       }
 
-      if (!groups[groupKey]) groups[groupKey] = [];
-      groups[groupKey].push(endpoint);
+      if (!groups[groupKeyName]) groups[groupKeyName] = [];
+      groups[groupKeyName].push(endpoint);
+    });
+
+    // Cache grouped results
+    groupingCache.set(groupKey, groups, {
+      ttl: 300000, // 5 minutes
+      dependencies: ['grouping', 'endpoints']
     });
 
     return groups;
-  }, [sortedEndpoints, grouping]);
+  }, [grouping, groupingCache]);
+
+  const groupedEndpoints = useMemo(() => {
+    return groupEndpoints(sortedEndpoints);
+  }, [sortedEndpoints, groupEndpoints]);
 
   return {
     filteredEndpoints: sortedEndpoints,

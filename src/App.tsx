@@ -4,16 +4,25 @@ import { Header } from './components/Header';
 import { AdvancedFilters } from './components/AdvancedFilters';
 import { ViewControls } from './components/ViewControls';
 import { EndpointCard } from './components/EndpointCard';
-import { ExportModal } from './components/ExportModal';
-import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { VirtualList, VirtualListSkeleton } from './components/VirtualList';
 import { MCPInstructions } from './components/MCPInstructions';
-import { SchemaExplorer } from './components/SchemaExplorer';
-import { ValidationCenter } from './components/ValidationCenter';
+import { PerformanceMonitor } from './components/PerformanceMonitor';
+import { 
+  LazyAnalyticsDashboard, 
+  LazyExportModal, 
+  LazySchemaExplorer, 
+  LazyValidationCenter,
+  usePreloadOnHover,
+  useLazyLoadingStats
+} from './components/LazyComponents';
 import { OpenAPIParser } from './utils/openapi-parser';
 import { ExportUtils } from './utils/export-utils';
 import { generateAnalytics } from './utils/analytics';
-import { useAdvancedSearch } from './hooks/useAdvancedSearch';
+import { useAdvancedSearchWithWorkers } from './hooks/useAdvancedSearchWithWorkers';
 import { useTouchGestures } from './utils/touchGestures';
+import { useWorkerManager } from './utils/worker-manager';
+import { OpenAPIStreamingParser } from './utils/streaming-parser';
+import { useMemoryOptimization } from './utils/memory-optimizer';
 import { OpenAPISpec, EndpointData, FilterState, GroupingState, ViewState } from './types/openapi';
 import { Zap, FileText, Search, BarChart3, ChevronDown, Shield, Code, ChevronUp, Layers, GitBranch, Users, RotateCcw } from 'lucide-react';
 
@@ -29,13 +38,38 @@ function App() {
   const [isMCPOpen, setIsMCPOpen] = useState(false);
   const [isSchemaExplorerOpen, setIsSchemaExplorerOpen] = useState(false);
   const [isValidationCenterOpen, setIsValidationCenterOpen] = useState(false);
+  const [isPerformanceMonitorOpen, setIsPerformanceMonitorOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showGestureHint, setShowGestureHint] = useState(false);
+  const [parseProgress, setParseProgress] = useState<{ progress: number; message: string } | null>(null);
   
   // Refs for gesture handling
   const mainContentRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<HTMLDivElement>(null);
+  
+  // Worker manager for background processing
+  const workerManager = useWorkerManager();
+  
+  // Memory optimization for performance monitoring
+  const { createObjectPool } = useMemoryOptimization();
+  
+  // Create object pools for frequently created objects
+  React.useEffect(() => {
+    // Object pool for endpoint card data
+    createObjectPool(
+      'endpointCardData',
+      () => ({ method: '', path: '', summary: '', tags: [], responses: {} }),
+      (obj) => {
+        obj.method = '';
+        obj.path = '';
+        obj.summary = '';
+        obj.tags = [];
+        obj.responses = {};
+      },
+      50
+    );
+  }, [createObjectPool]);
   
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -69,8 +103,24 @@ function App() {
   });
 
   const parser = new OpenAPIParser();
-  const { filteredEndpoints, groupedEndpoints, totalFiltered } = useAdvancedSearch(endpoints, filters, grouping);
+  const { 
+    filteredEndpoints, 
+    groupedEndpoints, 
+    totalFiltered, 
+    isSearching, 
+    searchProgress: searchProgressWorker, 
+    shouldUseWorkers 
+  } = useAdvancedSearchWithWorkers(endpoints, filters, grouping);
   const analytics = generateAnalytics(endpoints);
+
+  // Lazy loading stats for performance monitoring
+  const lazyStats = useLazyLoadingStats();
+
+  // Preload functions for hover optimization
+  const preloadAnalytics = usePreloadOnHover(() => import('./components/AnalyticsDashboard').then(m => ({ default: m.AnalyticsDashboard })));
+  const preloadExport = usePreloadOnHover(() => import('./components/ExportModal').then(m => ({ default: m.ExportModal })));
+  const preloadValidation = usePreloadOnHover(() => import('./components/ValidationCenter').then(m => ({ default: m.ValidationCenter })));
+  const preloadSchemas = usePreloadOnHover(() => import('./components/SchemaExplorer').then(m => ({ default: m.SchemaExplorer })));
 
   // Performance monitoring for mobile optimization
   const [performanceMetrics, setPerformanceMetrics] = useState({
@@ -81,8 +131,6 @@ function App() {
 
   // Virtual scrolling configuration for large endpoint lists
   const [containerHeight, setContainerHeight] = useState(600);
-  const ITEM_HEIGHT = view.layout === 'grid' ? 200 : view.layout === 'list' ? 80 : 120;
-  const shouldUseVirtualScrolling = endpoints.length > 50 || performanceMetrics.isSlowDevice;
 
   // Performance monitoring effect
   useEffect(() => {
@@ -130,38 +178,13 @@ function App() {
     return () => window.removeEventListener('resize', updateContainerHeight);
   }, []);
 
-  // Virtual scrolling implementation
-  const useVirtualScroll = (items: EndpointData[], itemHeight: number, containerHeight: number) => {
-    const [scrollTop, setScrollTop] = useState(0);
-    
-    const visibleStart = Math.floor(scrollTop / itemHeight);
-    const visibleEnd = Math.min(
-      visibleStart + Math.ceil(containerHeight / itemHeight) + 2, // +2 for buffer
-      items.length - 1
-    );
+  // Calculate item height based on view layout
+  const getItemHeight = useCallback((index: number): number => {
+    return view.layout === 'grid' ? 200 : view.layout === 'list' ? 80 : 120;
+  }, [view.layout]);
 
-    const startIndex = Math.max(0, visibleStart - 2); // -2 for buffer
-    const endIndex = Math.min(items.length - 1, visibleEnd + 2); // +2 for buffer
-
-    const visibleItems = items.slice(startIndex, endIndex + 1);
-    const totalHeight = items.length * itemHeight;
-    const offsetY = startIndex * itemHeight;
-
-    const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-      setScrollTop(e.currentTarget.scrollTop);
-    }, []);
-
-    return {
-      visibleItems,
-      totalHeight,
-      offsetY,
-      handleScroll,
-      startIndex,
-      endIndex
-    };
-  };
-
-  const virtualScrollData = useVirtualScroll(filteredEndpoints, ITEM_HEIGHT, containerHeight);
+  // Determine if virtual scrolling should be used
+  const shouldUseVirtualScrolling = filteredEndpoints.length > 50 || performanceMetrics.isSlowDevice;
 
   // Pull-to-refresh handler
   const handleRefresh = useCallback(async () => {
@@ -172,15 +195,15 @@ function App() {
       // Simulate refresh delay for better UX
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Re-parse and update endpoints
-      const extractedEndpoints = parser.extractEndpoints();
+      // Re-extract endpoints using worker
+      const extractedEndpoints = await workerManager.extractEndpoints(spec);
       setEndpoints(extractedEndpoints);
     } catch (err) {
       setError('Failed to refresh data');
     } finally {
       setIsRefreshing(false);
     }
-  }, [spec, isRefreshing, parser]);
+  }, [spec, isRefreshing, workerManager]);
 
   // Touch gesture handlers
   const handleSwipe = useCallback((gesture: { direction: 'left' | 'right' | 'up' | 'down'; distance: number; velocity: number; duration: number }) => {
@@ -250,15 +273,68 @@ function App() {
   const handleFileUpload = async (file: File) => {
     setIsLoading(true);
     setError(null);
+    setParseProgress({ progress: 0, message: 'Reading file...' });
     
     try {
-      const parsedSpec = await parser.parseFromFile(file);
-      setSpec(parsedSpec);
-      const extractedEndpoints = parser.extractEndpoints();
-      setEndpoints(extractedEndpoints);
+      // Use streaming parser for large files (>5MB) or if device is slow
+      const fileSize = file.size;
+      const useLargeFileStreaming = fileSize > 5 * 1024 * 1024; // 5MB threshold
+      const useStreamingOptimization = performanceMetrics.isSlowDevice || useLargeFileStreaming;
+      
+      if (useStreamingOptimization) {
+        setParseProgress({ progress: 0, message: `Streaming large file (${Math.round(fileSize / 1024 / 1024)}MB)...` });
+        
+        const streamingParser = new OpenAPIStreamingParser({
+          chunkSize: performanceMetrics.isSlowDevice ? 32 * 1024 : 64 * 1024, // Smaller chunks for slow devices
+          maxMemoryUsage: performanceMetrics.isSlowDevice ? 50 : 100, // Reduced memory limit for slow devices
+          enableCompression: fileSize > 10 * 1024 * 1024, // Enable compression for files >10MB
+          validateOnParse: true,
+          prioritizeEndpoints: true,
+          progressCallback: ({ percentage, stage, message }) => {
+            setParseProgress({ 
+              progress: percentage, 
+              message: `${stage}: ${message}` 
+            });
+          }
+        });
+        
+        const result = await streamingParser.parseFile(file);
+        
+        setSpec(result.spec);
+        setEndpoints(result.endpoints);
+        
+        // Report streaming performance
+        if (result.metadata) {
+          console.log('Streaming Parse Performance:', {
+            fileSize: `${Math.round(result.metadata.totalSize / 1024 / 1024)}MB`,
+            parseTime: `${Math.round(result.metadata.parseTime)}ms`,
+            chunksProcessed: result.metadata.chunksProcessed,
+            memoryUsed: `${Math.round(result.metadata.memoryUsed / 1024 / 1024)}MB`,
+            compressionRatio: result.metadata.compressionRatio
+          });
+        }
+      } else {
+        // Use standard parsing for smaller files
+        const text = await file.text();
+        setParseProgress({ progress: 25, message: 'Parsing specification...' });
+        
+        const result = await workerManager.parseOpenAPIContent(
+          text,
+          { validateSpec: true, extractMetadata: true },
+          (progress: number, message?: string) => {
+            setParseProgress({ progress: 25 + (progress * 0.75), message: message || 'Processing...' });
+          }
+        );
+        
+        setSpec(result.spec);
+        setEndpoints(result.endpoints || []);
+      }
+      
       setShowUpload(false);
+      setParseProgress(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse file');
+      setParseProgress(null);
     } finally {
       setIsLoading(false);
     }
@@ -267,15 +343,65 @@ function App() {
   const handleTextUpload = async (text: string) => {
     setIsLoading(true);
     setError(null);
+    setParseProgress({ progress: 0, message: 'Parsing specification...' });
     
     try {
-      const parsedSpec = await parser.parseFromText(text);
-      setSpec(parsedSpec);
-      const extractedEndpoints = parser.extractEndpoints();
-      setEndpoints(extractedEndpoints);
+      // Use streaming parser for large text content (>2MB) or if device is slow
+      const textSize = new Blob([text]).size;
+      const useLargeTextStreaming = textSize > 2 * 1024 * 1024; // 2MB threshold for text
+      const useStreamingOptimization = performanceMetrics.isSlowDevice || useLargeTextStreaming;
+      
+      if (useStreamingOptimization) {
+        setParseProgress({ progress: 0, message: `Streaming large content (${Math.round(textSize / 1024 / 1024)}MB)...` });
+        
+        const streamingParser = new OpenAPIStreamingParser({
+          chunkSize: performanceMetrics.isSlowDevice ? 32 * 1024 : 64 * 1024,
+          maxMemoryUsage: performanceMetrics.isSlowDevice ? 50 : 100,
+          enableCompression: textSize > 5 * 1024 * 1024, // Enable compression for content >5MB
+          validateOnParse: true,
+          prioritizeEndpoints: true,
+          progressCallback: ({ percentage, stage, message }) => {
+            setParseProgress({ 
+              progress: percentage, 
+              message: `${stage}: ${message}` 
+            });
+          }
+        });
+        
+        const result = await streamingParser.parseText(text);
+        
+        setSpec(result.spec);
+        setEndpoints(result.endpoints);
+        
+        // Report streaming performance
+        if (result.metadata) {
+          console.log('Streaming Text Parse Performance:', {
+            textSize: `${Math.round(result.metadata.totalSize / 1024 / 1024)}MB`,
+            parseTime: `${Math.round(result.metadata.parseTime)}ms`,
+            chunksProcessed: result.metadata.chunksProcessed,
+            memoryUsed: `${Math.round(result.metadata.memoryUsed / 1024 / 1024)}MB`,
+            compressionRatio: result.metadata.compressionRatio
+          });
+        }
+      } else {
+        // Use standard worker parsing for smaller content
+        const result = await workerManager.parseOpenAPIContent(
+          text,
+          { validateSpec: true, extractMetadata: true },
+          (progress: number, message?: string) => {
+            setParseProgress({ progress, message: message || 'Processing...' });
+          }
+        );
+        
+        setSpec(result.spec);
+        setEndpoints(result.endpoints || []);
+      }
+      
       setShowUpload(false);
+      setParseProgress(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse specification');
+      setParseProgress(null);
     } finally {
       setIsLoading(false);
     }
@@ -284,15 +410,80 @@ function App() {
   const handleUrlUpload = async (url: string) => {
     setIsLoading(true);
     setError(null);
+    setParseProgress({ progress: 0, message: 'Fetching from URL...' });
     
     try {
-      const parsedSpec = await parser.parseFromUrl(url);
-      setSpec(parsedSpec);
-      const extractedEndpoints = parser.extractEndpoints();
-      setEndpoints(extractedEndpoints);
+      // Fetch content from URL
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.statusText}`);
+      }
+      
+      // Check content length for streaming decision
+      const contentLength = response.headers.get('content-length');
+      const estimatedSize = contentLength ? parseInt(contentLength) : 0;
+      const shouldStreamFromSize = estimatedSize > 2 * 1024 * 1024; // 2MB threshold
+      
+      setParseProgress({ progress: 20, message: 'Processing fetched content...' });
+      
+      if (shouldStreamFromSize || performanceMetrics.isSlowDevice) {
+        // For large content or slow devices, use streaming approach
+        const text = await response.text();
+        const actualSize = new Blob([text]).size;
+        
+        setParseProgress({ progress: 30, message: `Streaming fetched content (${Math.round(actualSize / 1024 / 1024)}MB)...` });
+        
+        const streamingParser = new OpenAPIStreamingParser({
+          chunkSize: performanceMetrics.isSlowDevice ? 32 * 1024 : 64 * 1024,
+          maxMemoryUsage: performanceMetrics.isSlowDevice ? 50 : 100,
+          enableCompression: actualSize > 5 * 1024 * 1024,
+          validateOnParse: true,
+          prioritizeEndpoints: true,
+          progressCallback: ({ percentage, stage, message }) => {
+            setParseProgress({ 
+              progress: 30 + (percentage * 0.7), 
+              message: `${stage}: ${message}` 
+            });
+          }
+        });
+        
+        const result = await streamingParser.parseText(text);
+        
+        setSpec(result.spec);
+        setEndpoints(result.endpoints);
+        
+        // Report streaming performance
+        if (result.metadata) {
+          console.log('Streaming URL Parse Performance:', {
+            contentSize: `${Math.round(result.metadata.totalSize / 1024 / 1024)}MB`,
+            parseTime: `${Math.round(result.metadata.parseTime)}ms`,
+            chunksProcessed: result.metadata.chunksProcessed,
+            memoryUsed: `${Math.round(result.metadata.memoryUsed / 1024 / 1024)}MB`,
+            compressionRatio: result.metadata.compressionRatio
+          });
+        }
+      } else {
+        // Use standard parsing for smaller content
+        const text = await response.text();
+        setParseProgress({ progress: 30, message: 'Parsing specification...' });
+        
+        const result = await workerManager.parseOpenAPIContent(
+          text,
+          { validateSpec: true, extractMetadata: true },
+          (progress: number, message?: string) => {
+            setParseProgress({ progress: 30 + (progress * 0.7), message: message || 'Processing...' });
+          }
+        );
+        
+        setSpec(result.spec);
+        setEndpoints(result.endpoints || []);
+      }
+      
       setShowUpload(false);
+      setParseProgress(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch or parse specification from URL');
+      setParseProgress(null);
     } finally {
       setIsLoading(false);
     }
@@ -338,9 +529,30 @@ function App() {
     setExpandedGroups(new Set());
   };
 
-  const availableTags = parser.getAllTags();
-  const availableMethods = parser.getAllMethods();
-  const availableStatusCodes = parser.getAllStatusCodes();
+  // Extract filter options from endpoints
+  const availableTags = React.useMemo(() => {
+    const tags = new Set<string>();
+    endpoints.forEach(endpoint => {
+      endpoint.tags.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, [endpoints]);
+
+  const availableMethods = React.useMemo(() => {
+    const methods = new Set<string>();
+    endpoints.forEach(endpoint => {
+      methods.add(endpoint.method);
+    });
+    return Array.from(methods).sort();
+  }, [endpoints]);
+
+  const availableStatusCodes = React.useMemo(() => {
+    const codes = new Set<string>();
+    endpoints.forEach(endpoint => {
+      Object.keys(endpoint.responses).forEach(code => codes.add(code));
+    });
+    return Array.from(codes).sort();
+  }, [endpoints]);
 
   // Show upload screen if no spec is loaded
   if (showUpload || !spec) {
@@ -426,6 +638,7 @@ function App() {
             onTextUpload={handleTextUpload}
             onUrlUpload={handleUrlUpload}
             isLoading={isLoading}
+            parseProgress={parseProgress}
           />
         </div>
       </div>
@@ -446,6 +659,7 @@ function App() {
         searchValue={filters.search}
         onSearchChange={(search) => setFilters({ ...filters, search })}
         isSpecLoaded={!!spec}
+
       />
 
       <div className="flex min-h-0">
@@ -514,6 +728,7 @@ function App() {
                 <div className="flex flex-col xs:flex-row gap-2 flex-shrink-0">
                   <button
                     onClick={() => setIsValidationCenterOpen(true)}
+                    {...preloadValidation}
                     className="touch-target-sm flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium focus:ring-2 focus:ring-blue-300 focus:ring-offset-2"
                     aria-label="Open validation center"
                   >
@@ -522,11 +737,20 @@ function App() {
                   </button>
                   <button
                     onClick={() => setIsSchemaExplorerOpen(true)}
+                    {...preloadSchemas}
                     className="touch-target-sm flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm font-medium focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
                     aria-label="Open schema explorer"
                   >
                     <Layers className="h-4 w-4" />
                     <span className="xs:hidden sm:inline">Schemas</span>
+                  </button>
+                  <button
+                    onClick={() => setIsPerformanceMonitorOpen(true)}
+                    className="touch-target-sm flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium focus:ring-2 focus:ring-green-300 focus:ring-offset-2"
+                    aria-label="Open performance monitor"
+                  >
+                    <Zap className="h-4 w-4" />
+                    <span className="xs:hidden sm:inline">Performance</span>
                   </button>
                 </div>
               </div>
@@ -628,23 +852,22 @@ function App() {
                                 {(shouldUseVirtualScrolling && groupEndpoints.length > 20) ? (
                                   <tr>
                                     <td colSpan={6} className="p-0">
-                                      <div 
-                                        style={{ height: containerHeight }}
-                                        className="overflow-y-auto custom-scrollbar"
-                                        onScroll={virtualScrollData.handleScroll}
-                                      >
-                                        <div style={{ height: virtualScrollData.totalHeight, position: 'relative' }}>
-                                          <div style={{ transform: `translateY(${virtualScrollData.offsetY}px)` }}>
-                                            {virtualScrollData.visibleItems.map((endpoint) => (
-                                              <EndpointCard
-                                                key={`${endpoint.method}-${endpoint.path}`}
-                                                endpoint={endpoint}
-                                                view={view}
-                                              />
-                                            ))}
-                                          </div>
-                                        </div>
-                                      </div>
+                                      <VirtualList
+                                        items={groupEndpoints}
+                                        height={containerHeight}
+                                        itemHeight={getItemHeight}
+                                        renderItem={(virtualItem, isScrolling) => (
+                                          <EndpointCard
+                                            key={`${virtualItem.data.method}-${virtualItem.data.path}`}
+                                            endpoint={virtualItem.data}
+                                            view={view}
+                                          />
+                                        )}
+                                        className="custom-scrollbar"
+                                        getItemKey={(endpoint, index) => `${endpoint.method}-${endpoint.path}`}
+                                        loadingState={<VirtualListSkeleton count={5} itemHeight={60} />}
+                                        emptyState={<div className="text-center text-gray-500 py-8">No endpoints found</div>}
+                                      />
                                     </td>
                                   </tr>
                                 ) : (
@@ -662,23 +885,22 @@ function App() {
                         ) : (
                           <>
                             {(shouldUseVirtualScrolling && groupEndpoints.length > 20) ? (
-                              <div 
-                                style={{ height: containerHeight }}
-                                className="overflow-y-auto custom-scrollbar"
-                                onScroll={virtualScrollData.handleScroll}
-                              >
-                                <div style={{ height: virtualScrollData.totalHeight, position: 'relative' }}>
-                                  <div style={{ transform: `translateY(${virtualScrollData.offsetY}px)` }}>
-                                    {virtualScrollData.visibleItems.map((endpoint) => (
-                                      <EndpointCard
-                                        key={`${endpoint.method}-${endpoint.path}`}
-                                        endpoint={endpoint}
-                                        view={view}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
+                              <VirtualList
+                                items={groupEndpoints}
+                                height={containerHeight}
+                                itemHeight={getItemHeight}
+                                renderItem={(virtualItem, isScrolling) => (
+                                  <EndpointCard
+                                    key={`${virtualItem.data.method}-${virtualItem.data.path}`}
+                                    endpoint={virtualItem.data}
+                                    view={view}
+                                  />
+                                )}
+                                className="custom-scrollbar"
+                                getItemKey={(endpoint, index) => `${endpoint.method}-${endpoint.path}`}
+                                loadingState={<VirtualListSkeleton count={5} itemHeight={getItemHeight(0)} />}
+                                emptyState={<div className="text-center text-gray-500 py-8">No endpoints found</div>}
+                              />
                             ) : (
                               groupEndpoints.map((endpoint) => (
                                 <EndpointCard
@@ -702,7 +924,7 @@ function App() {
 
       {/* Modals */}
       {isAnalyticsOpen && (
-        <AnalyticsDashboard
+        <LazyAnalyticsDashboard
           isOpen={isAnalyticsOpen}
           onClose={() => setIsAnalyticsOpen(false)}
           analytics={analytics}
@@ -710,7 +932,7 @@ function App() {
       )}
 
       {isExportOpen && (
-        <ExportModal
+        <LazyExportModal
           isOpen={isExportOpen}
           onClose={() => setIsExportOpen(false)}
           endpoints={filteredEndpoints}
@@ -720,7 +942,7 @@ function App() {
       )}
 
       {isValidationCenterOpen && (
-        <ValidationCenter
+        <LazyValidationCenter
           isOpen={isValidationCenterOpen}
           onClose={() => setIsValidationCenterOpen(false)}
           spec={spec}
@@ -736,10 +958,22 @@ function App() {
       )}
 
       {isSchemaExplorerOpen && (
-        <SchemaExplorer
+        <LazySchemaExplorer
           isOpen={isSchemaExplorerOpen}
           onClose={() => setIsSchemaExplorerOpen(false)}
           spec={spec}
+        />
+      )}
+
+      {isPerformanceMonitorOpen && (
+        <PerformanceMonitor
+          isVisible={isPerformanceMonitorOpen}
+          onClose={() => setIsPerformanceMonitorOpen(false)}
+          endpointCount={endpoints.length}
+          filteredCount={totalFiltered}
+          isSearching={isSearching}
+          searchProgress={searchProgressWorker || parseProgress}
+          shouldUseWorkers={shouldUseWorkers}
         />
       )}
 
