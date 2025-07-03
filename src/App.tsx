@@ -660,7 +660,6 @@ function App() {
         searchValue={filters.search}
         onSearchChange={(search) => setFilters({ ...filters, search })}
         isSpecLoaded={!!spec}
-
       />
 
       <div className="flex min-h-0">
@@ -737,9 +736,10 @@ function App() {
                     <span className="xs:hidden sm:inline">Validate</span>
                   </button>
                   <button
-                    onClick={() => setIsSchemaExplorerOpen(true)}
-                    {...preloadSchemas}
-                    className="touch-target-sm flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm font-medium focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+                    onClick={() => spec && setIsSchemaExplorerOpen(true)}
+                    onMouseEnter={preloadSchemas.onMouseEnter}
+                    disabled={!spec}
+                    className="touch-target-sm flex items-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm font-medium focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Open schema explorer"
                   >
                     <Layers className="h-4 w-4" />

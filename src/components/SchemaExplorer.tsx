@@ -145,8 +145,19 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     return Object.keys(schemas).length > 100;
   }, [spec]);
 
-  const schemas = useMemo(() => localSpec?.components?.schemas || {}, [localSpec]);
-  const schemaNames = Object.keys(schemas);
+  const schemas = useMemo(() => {
+    if (!localSpec) return {};
+    // Support both OpenAPI 3.0+ and Swagger 2.0
+    if (localSpec.components?.schemas) {
+      return localSpec.components.schemas;
+    }
+    if ((localSpec as any).definitions) {
+      return (localSpec as any).definitions;
+    }
+    return {};
+  }, [localSpec]);
+
+  const schemaNames = useMemo(() => Object.keys(schemas), [schemas]);
 
   // Enhanced dependency analysis - moved before schemaMetrics
   const findSchemaDependencies = useMemo(() => {
@@ -941,11 +952,14 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     generateSearchSuggestions();
   }, [generateSearchSuggestions]);
 
+  // Memoize spec content to prevent re-renders from object reference changes
+  const specString = useMemo(() => JSON.stringify(spec), [spec]);
+
   useEffect(() => {
-    if (spec) {
-      setLocalSpec(JSON.parse(JSON.stringify(spec)));
+    if (specString && isOpen) {
+      setLocalSpec(JSON.parse(specString));
     }
-  }, [spec]);
+  }, [specString, isOpen]);
   
   useEffect(() => {
     if (editingSchema && schemas[editingSchema]) {
