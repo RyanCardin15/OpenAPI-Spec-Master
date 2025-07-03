@@ -69,7 +69,7 @@ function App() {
       },
       50
     );
-  }, [createObjectPool]);
+  }, []);
   
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -203,7 +203,7 @@ function App() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [spec, isRefreshing, workerManager]);
+  }, [spec, isRefreshing, workerManager.extractEndpoints]);
 
   // Touch gesture handlers
   const handleSwipe = useCallback((gesture: { direction: 'left' | 'right' | 'up' | 'down'; distance: number; velocity: number; duration: number }) => {

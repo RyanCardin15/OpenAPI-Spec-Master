@@ -7,4 +7,13 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  worker: {
+    format: 'es',
+    plugins: () => [react()]
+  },
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
+  }
 });

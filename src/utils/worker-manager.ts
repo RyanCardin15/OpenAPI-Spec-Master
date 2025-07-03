@@ -1,6 +1,10 @@
 import type { ParseWorkerMessage, ParseWorkerResponse } from '../workers/openapi-parser.worker';
 import type { SearchWorkerMessage, SearchWorkerResponse } from '../workers/search.worker';
 
+// Import workers using Vite's worker import syntax
+import OpenAPIParserWorker from '../workers/openapi-parser.worker?worker';
+import SearchWorker from '../workers/search.worker?worker';
+
 // Base worker interface
 export interface WorkerTask {
   id: string;
@@ -31,8 +35,19 @@ export class WorkerManager {
   // Initialize a worker type
   async initializeWorker(type: 'parser' | 'search', url?: string): Promise<void> {
     try {
-      const workerUrl = url || this.getWorkerUrl(type);
-      const worker = new Worker(workerUrl, { type: 'module' });
+      let worker: Worker;
+      
+      // Use the imported worker classes
+      switch (type) {
+        case 'parser':
+          worker = new OpenAPIParserWorker();
+          break;
+        case 'search':
+          worker = new SearchWorker();
+          break;
+        default:
+          throw new Error(`Unknown worker type: ${type}`);
+      }
       
       worker.addEventListener('message', (event) => {
         this.handleWorkerMessage(event.data);
@@ -49,7 +64,18 @@ export class WorkerManager {
       if (this.config.enablePooling) {
         const pool: Worker[] = [];
         for (let i = 0; i < (this.config.maxWorkers || 4) - 1; i++) {
-          const poolWorker = new Worker(workerUrl, { type: 'module' });
+          let poolWorker: Worker;
+          switch (type) {
+            case 'parser':
+              poolWorker = new OpenAPIParserWorker();
+              break;
+            case 'search':
+              poolWorker = new SearchWorker();
+              break;
+            default:
+              continue;
+          }
+          
           poolWorker.addEventListener('message', (event) => {
             this.handleWorkerMessage(event.data);
           });
@@ -63,35 +89,6 @@ export class WorkerManager {
     } catch (error) {
       console.error(`Failed to initialize ${type} worker:`, error);
       throw error;
-    }
-  }
-
-  // Get worker URL for different types
-  private getWorkerUrl(type: string): string {
-    // In production, these would be actual URLs to built worker files
-    // For development, we can use dynamic imports or blob URLs
-    const workerCode = this.getWorkerCode(type);
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    return URL.createObjectURL(blob);
-  }
-
-  // Get worker code (simplified version for demonstration)
-  private getWorkerCode(type: string): string {
-    // In a real implementation, you'd import the worker files
-    // This is a simplified approach for the demo
-    switch (type) {
-      case 'parser':
-        return `
-          // OpenAPI Parser Worker
-          import('../workers/openapi-parser.worker.ts');
-        `;
-      case 'search':
-        return `
-          // Search Worker
-          import('../workers/search.worker.ts');
-        `;
-      default:
-        throw new Error(`Unknown worker type: ${type}`);
     }
   }
 

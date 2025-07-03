@@ -57,7 +57,7 @@ export function useAdvancedSearchWithWorkers(
       setIsSearching(false);
       setSearchProgress(null);
     }
-  }, [endpoints, workerManager]);
+  }, [endpoints, workerManager.fuzzySearch]);
 
   const performFastFilter = useCallback((baseEndpoints: EndpointData[]): EndpointData[] => {
     let result = baseEndpoints;
@@ -96,62 +96,76 @@ export function useAdvancedSearchWithWorkers(
     }
 
     return result;
-  }, [filters]);
+  }, [
+    filters.methods,
+    filters.tags,
+    filters.statusCodes,
+    filters.deprecated,
+    filters.complexity,
+    filters.pathPattern
+  ]);
 
   const [filteredEndpoints, setFilteredEndpoints] = useState<EndpointData[]>([]);
   const [groupedEndpoints, setGroupedEndpoints] = useState<{ [key: string]: EndpointData[] }>({});
 
-  useEffect(() => {
-    const processData = async () => {
-      try {
-        let searchResults: EndpointData[];
-        if (shouldUseWorkers && filters.search.trim()) {
-          searchResults = await performWorkerSearch(filters.search);
-        } else {
-          searchResults = performFastSearch(filters.search);
-        }
-
-        const filteredResults = performFastFilter(searchResults);
-        
-        // Simple grouping
-        const groups: { [key: string]: EndpointData[] } = {};
-        if (grouping.groupBy === 'none') {
-          groups['All Endpoints'] = filteredResults;
-        } else {
-          filteredResults.forEach(endpoint => {
-            let groupKey = 'Other';
-            switch (grouping.groupBy) {
-              case 'tag':
-                groupKey = endpoint.tags.length > 0 ? endpoint.tags[0] : 'Untagged';
-                break;
-              case 'method':
-                groupKey = endpoint.method;
-                break;
-              case 'path':
-                const pathSegments = endpoint.path.split('/').filter(Boolean);
-                groupKey = pathSegments.length > 0 ? `/${pathSegments[0]}` : '/';
-                break;
-            }
-            
-            if (!groups[groupKey]) groups[groupKey] = [];
-            groups[groupKey].push(endpoint);
-          });
-        }
-
-        setFilteredEndpoints(filteredResults);
-        setGroupedEndpoints(groups);
-      } catch (error) {
-        console.error('Error processing search data:', error);
-        const searchResults = performFastSearch(filters.search);
-        const filteredResults = performFastFilter(searchResults);
-        
-        setFilteredEndpoints(filteredResults);
-        setGroupedEndpoints({ 'All Endpoints': filteredResults });
+  const processData = useCallback(async () => {
+    try {
+      let searchResults: EndpointData[];
+      if (shouldUseWorkers && filters.search.trim()) {
+        searchResults = await performWorkerSearch(filters.search);
+      } else {
+        searchResults = performFastSearch(filters.search);
       }
-    };
 
+      const filteredResults = performFastFilter(searchResults);
+      
+      // Simple grouping
+      const groups: { [key: string]: EndpointData[] } = {};
+      if (grouping.groupBy === 'none') {
+        groups['All Endpoints'] = filteredResults;
+      } else {
+        filteredResults.forEach(endpoint => {
+          let groupKey = 'Other';
+          switch (grouping.groupBy) {
+            case 'tag':
+              groupKey = endpoint.tags.length > 0 ? endpoint.tags[0] : 'Untagged';
+              break;
+            case 'method':
+              groupKey = endpoint.method;
+              break;
+            case 'path':
+              const pathSegments = endpoint.path.split('/').filter(Boolean);
+              groupKey = pathSegments.length > 0 ? `/${pathSegments[0]}` : '/';
+              break;
+          }
+          
+          if (!groups[groupKey]) groups[groupKey] = [];
+          groups[groupKey].push(endpoint);
+        });
+      }
+
+      setFilteredEndpoints(filteredResults);
+      setGroupedEndpoints(groups);
+    } catch (error) {
+      console.error('Error processing search data:', error);
+      const searchResults = performFastSearch(filters.search);
+      const filteredResults = performFastFilter(searchResults);
+      
+      setFilteredEndpoints(filteredResults);
+      setGroupedEndpoints({ 'All Endpoints': filteredResults });
+    }
+  }, [
+    shouldUseWorkers,
+    filters.search,
+    grouping.groupBy,
+    performWorkerSearch,
+    performFastSearch,
+    performFastFilter
+  ]);
+
+  useEffect(() => {
     processData();
-  }, [endpoints, filters, grouping, shouldUseWorkers, performFastSearch, performFastFilter, performWorkerSearch]);
+  }, [processData]);
 
   return {
     filteredEndpoints,
