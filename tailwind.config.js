@@ -3,6 +3,14 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   darkMode: 'class',
   theme: {
+    screens: {
+      'xs': '475px',
+      'sm': '640px', 
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
     extend: {
       colors: {
         primary: {
@@ -81,6 +89,11 @@ export default {
         xl: 'var(--spacing-xl)',
         '2xl': 'var(--spacing-2xl)',
         '3xl': 'var(--spacing-3xl)',
+        // Touch-friendly sizes (44px minimum)
+        'touch': '44px',
+        'touch-sm': '40px',
+        'touch-lg': '48px',
+        'touch-xl': '56px',
       },
       borderRadius: {
         sm: 'var(--border-radius-sm)',
@@ -94,10 +107,42 @@ export default {
         md: 'var(--shadow-md)',
         lg: 'var(--shadow-lg)',
         xl: 'var(--shadow-xl)',
+        // Accessibility focused shadows
+        'focus': '0 0 0 2px rgb(59 130 246 / 0.5)',
+        'focus-primary': '0 0 0 2px var(--color-primary-500) / 0.5',
       },
       animation: {
         'fade-in': 'theme-fade-in 0.2s ease-out',
         'slide-up': 'theme-slide-up 0.2s ease-out',
+        'slide-in-left': 'slide-in-left 0.3s ease-out',
+        'slide-in-right': 'slide-in-right 0.3s ease-out',
+        'bounce-gentle': 'bounce-gentle 0.6s ease-in-out',
+      },
+      keyframes: {
+        'slide-in-left': {
+          '0%': { transform: 'translateX(-100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        'slide-in-right': {
+          '0%': { transform: 'translateX(100%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
+        },
+        'bounce-gentle': {
+          '0%, 20%, 53%, 80%, 100%': { transform: 'translateY(0)' },
+          '40%, 43%': { transform: 'translateY(-8px)' },
+          '70%': { transform: 'translateY(-4px)' },
+          '90%': { transform: 'translateY(-2px)' },
+        },
+      },
+      maxWidth: {
+        'mobile': '475px',
+        'tablet': '768px',
+      },
+      minHeight: {
+        'touch': '44px',
+        'touch-sm': '40px',
+        'touch-lg': '48px',
+        'touch-xl': '56px',
       },
     },
   },

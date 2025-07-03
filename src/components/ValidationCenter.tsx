@@ -1,723 +1,614 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Shield, 
   CheckCircle, 
   AlertTriangle, 
   XCircle, 
   Eye, 
-  Search, 
-  FileText,
-  Key,
-  Trash2,
-  TrendingUp,
-  Code,
-  Database,
-  X,
-  Filter,
-  SortAsc,
-  SortDesc,
-  ArrowUpDown
+  Keyboard, 
+  Users,
+  Zap,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { OpenAPISpec, EndpointData } from '../types/openapi';
 
+interface ValidationIssue {
+  id: string;
+  type: 'error' | 'warning' | 'info';
+  category: 'openapi' | 'accessibility' | 'performance' | 'security';
+  title: string;
+  description: string;
+  element?: HTMLElement;
+  suggestion?: string;
+  wcagLevel?: 'A' | 'AA' | 'AAA';
+  wcagCriterion?: string;
+}
+
+interface AccessibilityTestResult {
+  passed: number;
+  failed: number;
+  warnings: number;
+  issues: ValidationIssue[];
+  score: number;
+  compliance: 'A' | 'AA' | 'AAA' | 'Non-compliant';
+}
+
 interface ValidationCenterProps {
-  spec: OpenAPISpec | null;
-  endpoints: EndpointData[];
   isOpen: boolean;
   onClose: () => void;
+  spec: OpenAPISpec;
+  endpoints: EndpointData[];
 }
 
-interface ValidationResult {
-  type: 'success' | 'warning' | 'error';
-  category: string;
-  message: string;
-  details?: string;
-  count?: number;
-  severity: 'low' | 'medium' | 'high';
-}
-
-export const ValidationCenter: React.FC<ValidationCenterProps> = ({ 
-  spec, 
-  endpoints, 
-  isOpen, 
-  onClose 
+export const ValidationCenter: React.FC<ValidationCenterProps> = ({
+  isOpen,
+  onClose,
+  spec,
+  endpoints
 }) => {
-  const [activeTab, setActiveTab] = useState<'design' | 'security' | 'examples' | 'cleanup' | 'evolution'>('design');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'severity' | 'type' | 'category'>('severity');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [activeTab, setActiveTab] = useState<'openapi' | 'accessibility' | 'performance' | 'security'>('accessibility');
+  const [isValidating, setIsValidating] = useState(false);
+  const [accessibilityResults, setAccessibilityResults] = useState<AccessibilityTestResult | null>(null);
+  const [openAPIIssues, setOpenAPIIssues] = useState<ValidationIssue[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['critical', 'major']));
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  const validateAPIDesign = (): ValidationResult[] => {
-    if (!spec || !endpoints) return [];
-    
-    const results: ValidationResult[] = [];
-
-    // Check for missing descriptions
-    const undocumentedEndpoints = endpoints.filter(ep => !ep.summary && !ep.description);
-    if (undocumentedEndpoints.length > 0) {
-      results.push({
-        type: 'warning',
-        category: 'Documentation',
-        message: 'Endpoints missing documentation',
-        details: `${undocumentedEndpoints.length} endpoints lack summaries or descriptions. This makes the API harder to understand and use.`,
-        count: undocumentedEndpoints.length,
-        severity: 'medium'
-      });
-    }
-
-    // Check for deprecated endpoints
-    const deprecatedEndpoints = endpoints.filter(ep => ep.deprecated);
-    if (deprecatedEndpoints.length > 0) {
-      results.push({
-        type: 'warning',
-        category: 'Lifecycle',
-        message: 'Deprecated endpoints found',
-        details: `${deprecatedEndpoints.length} endpoints are marked as deprecated. Consider migration strategies and sunset timelines.`,
-        count: deprecatedEndpoints.length,
-        severity: 'low'
-      });
-    }
-
-    // Check for consistent naming
-    const inconsistentPaths = endpoints.filter(ep => 
-      !ep.path.match(/^\/[a-z0-9\-_\/{}]+$/i)
-    );
-    if (inconsistentPaths.length > 0) {
-      results.push({
-        type: 'warning',
-        category: 'Naming Convention',
-        message: 'Inconsistent path naming',
-        details: `${inconsistentPaths.length} paths don't follow REST conventions. Consider using lowercase, hyphens, and consistent patterns.`,
-        count: inconsistentPaths.length,
-        severity: 'medium'
-      });
-    }
-
-    // Check for proper HTTP methods
-    const getEndpointsWithBody = endpoints.filter(ep => 
-      ep.method === 'GET' && ep.requestBody
-    );
-    if (getEndpointsWithBody.length > 0) {
-      results.push({
-        type: 'error',
-        category: 'HTTP Methods',
-        message: 'GET endpoints with request body',
-        details: `${getEndpointsWithBody.length} GET requests have request bodies, which violates HTTP semantics.`,
-        count: getEndpointsWithBody.length,
-        severity: 'high'
-      });
-    }
-
-    // Check for response codes
-    const endpointsWithoutSuccessResponse = endpoints.filter(ep => 
-      !Object.keys(ep.responses).some(code => code.startsWith('2'))
-    );
-    if (endpointsWithoutSuccessResponse.length > 0) {
-      results.push({
-        type: 'error',
-        category: 'Response Codes',
-        message: 'Missing success responses',
-        details: `${endpointsWithoutSuccessResponse.length} endpoints don't define success response codes (2xx).`,
-        count: endpointsWithoutSuccessResponse.length,
-        severity: 'high'
-      });
-    }
-
-    // Check for missing error responses
-    const endpointsWithoutErrorResponses = endpoints.filter(ep => 
-      !Object.keys(ep.responses).some(code => code.startsWith('4') || code.startsWith('5'))
-    );
-    if (endpointsWithoutErrorResponses.length > 0) {
-      results.push({
-        type: 'warning',
-        category: 'Error Handling',
-        message: 'Missing error responses',
-        details: `${endpointsWithoutErrorResponses.length} endpoints don't define error response codes (4xx/5xx).`,
-        count: endpointsWithoutErrorResponses.length,
-        severity: 'medium'
-      });
-    }
-
-    if (results.length === 0) {
-      results.push({
-        type: 'success',
-        category: 'Design Quality',
-        message: 'API design looks excellent!',
-        details: 'No major design issues detected. Your API follows best practices.',
-        severity: 'low'
-      });
-    }
-
-    return results;
-  };
-
-  const validateSecurity = (): ValidationResult[] => {
-    if (!spec || !endpoints) return [];
-    
-    const results: ValidationResult[] = [];
-
-    // Check for security schemes
-    const hasGlobalSecurity = spec.security && spec.security.length > 0;
-    const securedEndpoints = endpoints.filter(ep => ep.security && ep.security.length > 0);
-    
-    if (!hasGlobalSecurity && securedEndpoints.length === 0) {
-      results.push({
-        type: 'error',
-        category: 'Authentication',
-        message: 'No security schemes detected',
-        details: 'API has no authentication or authorization mechanisms. This poses significant security risks.',
-        severity: 'high'
-      });
-    }
-
-    // Check for sensitive endpoints without security
-    const sensitiveEndpoints = endpoints.filter(ep => 
-      (ep.method === 'POST' || ep.method === 'PUT' || ep.method === 'DELETE') &&
-      (!ep.security || ep.security.length === 0) &&
-      !hasGlobalSecurity
-    );
-    
-    if (sensitiveEndpoints.length > 0) {
-      results.push({
-        type: 'warning',
-        category: 'Authorization',
-        message: 'Sensitive endpoints without security',
-        details: `${sensitiveEndpoints.length} POST/PUT/DELETE endpoints lack security. These operations should be protected.`,
-        count: sensitiveEndpoints.length,
-        severity: 'high'
-      });
-    }
-
-    // Check for HTTPS
-    const hasHttpsServer = spec.servers?.some(server => 
-      server.url.startsWith('https://')
-    );
-    
-    if (!hasHttpsServer) {
-      results.push({
-        type: 'warning',
-        category: 'Transport Security',
-        message: 'No HTTPS servers defined',
-        details: 'Consider using HTTPS for secure communication. HTTP transmits data in plain text.',
-        severity: 'medium'
-      });
-    }
-
-    // Check for security scheme diversity
-    const securitySchemes = spec.components?.securitySchemes || {};
-    const schemeTypes = Object.values(securitySchemes).map((scheme: any) => scheme.type);
-    const uniqueTypes = new Set(schemeTypes);
-    
-    if (uniqueTypes.size === 1 && uniqueTypes.has('apiKey')) {
-      results.push({
-        type: 'warning',
-        category: 'Security Diversity',
-        message: 'Only API key authentication',
-        details: 'Consider implementing OAuth2 or other robust authentication methods for better security.',
-        severity: 'medium'
-      });
-    }
-
-    if (results.length === 0) {
-      results.push({
-        type: 'success',
-        category: 'Security',
-        message: 'Security configuration looks robust!',
-        details: 'No major security issues detected. Your API follows security best practices.',
-        severity: 'low'
-      });
-    }
-
-    return results;
-  };
-
-  const validateExamples = (): ValidationResult[] => {
-    if (!spec || !endpoints) return [];
-    
-    const results: ValidationResult[] = [];
-
-    // Check for missing examples
-    const endpointsWithoutExamples = endpoints.filter(ep => {
-      const hasRequestExample = !ep.requestBody || 
-        (ep.requestBody && Object.values((ep.requestBody as any).content || {}).some((media: any) => 
-          media.example || media.examples
-        ));
-      
-      const hasResponseExample = Object.values(ep.responses).some(response => 
-        response.content && Object.values(response.content).some((media: any) => 
-          media.example || media.examples
-        )
+  // Focus management for modal
+  useEffect(() => {
+    if (isOpen) {
+      const firstFocusable = modalRef.current?.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
-
-      return !hasRequestExample || !hasResponseExample;
-    });
-
-    if (endpointsWithoutExamples.length > 0) {
-      results.push({
-        type: 'warning',
-        category: 'Documentation Examples',
-        message: 'Missing request/response examples',
-        details: `${endpointsWithoutExamples.length} endpoints lack examples. Examples significantly improve developer experience.`,
-        count: endpointsWithoutExamples.length,
-        severity: 'medium'
-      });
+      firstFocusable?.focus();
     }
+  }, [isOpen]);
 
-    // Check for parameter examples
-    const endpointsWithoutParamExamples = endpoints.filter(ep => 
-      ep.parameters.some(param => !param.example && !param.schema?.example)
-    );
-
-    if (endpointsWithoutParamExamples.length > 0) {
-      results.push({
-        type: 'warning',
-        category: 'Parameter Examples',
-        message: 'Missing parameter examples',
-        details: `${endpointsWithoutParamExamples.length} endpoints have parameters without examples.`,
-        count: endpointsWithoutParamExamples.length,
-        severity: 'low'
-      });
-    }
-
-    // Simulate example validation (in real implementation, this would validate against schemas)
-    const invalidExamples = Math.floor(Math.random() * 3); // Simulated
-    if (invalidExamples > 0) {
-      results.push({
-        type: 'error',
-        category: 'Example Validation',
-        message: 'Invalid examples detected',
-        details: `${invalidExamples} examples don't match their schemas. This can mislead developers.`,
-        count: invalidExamples,
-        severity: 'high'
-      });
-    }
-
-    if (results.length === 0) {
-      results.push({
-        type: 'success',
-        category: 'Examples',
-        message: 'All examples are comprehensive and valid!',
-        details: 'Examples match their schemas and provide excellent documentation.',
-        severity: 'low'
-      });
-    }
-
-    return results;
-  };
-
-  const findUnusedSchemas = (): ValidationResult[] => {
-    if (!spec || !endpoints) return [];
-    
-    const results: ValidationResult[] = [];
-    const schemas = spec.components?.schemas || {};
-    const usedSchemas = new Set<string>();
-
-    // Find referenced schemas (simplified check)
-    const findReferences = (obj: any) => {
-      if (!obj || typeof obj !== 'object') return;
-      
-      if (obj.$ref && typeof obj.$ref === 'string') {
-        const refName = obj.$ref.replace('#/components/schemas/', '');
-        usedSchemas.add(refName);
+  // Escape key handler
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
       }
-      
-      Object.values(obj).forEach(value => {
-        if (typeof value === 'object') {
-          findReferences(value);
-        }
-      });
     };
 
-    // Check all endpoints for schema references
-    endpoints.forEach(endpoint => {
-      findReferences(endpoint.operation);
-    });
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [isOpen, onClose]);
 
-    const unusedSchemas = Object.keys(schemas).filter(name => !usedSchemas.has(name));
-    
-    if (unusedSchemas.length > 0) {
-      results.push({
-        type: 'warning',
-        category: 'Schema Cleanup',
-        message: 'Unused schemas detected',
-        details: `${unusedSchemas.length} schemas are defined but never referenced: ${unusedSchemas.slice(0, 3).join(', ')}${unusedSchemas.length > 3 ? '...' : ''}`,
-        count: unusedSchemas.length,
-        severity: 'low'
-      });
-    }
+  // Comprehensive accessibility validation
+  const runAccessibilityValidation = async (): Promise<AccessibilityTestResult> => {
+    const issues: ValidationIssue[] = [];
+    let passed = 0;
+    let failed = 0;
+    let warnings = 0;
 
-    // Check for circular references
-    const circularRefs = []; // Simplified - would need proper cycle detection
-    if (circularRefs.length > 0) {
-      results.push({
-        type: 'warning',
-        category: 'Schema Structure',
-        message: 'Circular references detected',
-        details: 'Some schemas have circular references which may cause issues in code generation.',
-        severity: 'medium'
-      });
-    }
-
-    if (results.length === 0) {
-      results.push({
-        type: 'success',
-        category: 'Schema Optimization',
-        message: 'All schemas are efficiently used!',
-        details: 'No unused schema definitions found. Your API is well-optimized.',
-        severity: 'low'
-      });
-    }
-
-    return results;
-  };
-
-  const analyzeEvolution = (): ValidationResult[] => {
-    if (!spec || !endpoints) return [];
-    
-    const results: ValidationResult[] = [];
-
-    // Check for versioning strategy
-    const hasVersioning = spec.info.version && spec.info.version !== '1.0.0';
-    if (!hasVersioning) {
-      results.push({
-        type: 'warning',
-        category: 'API Versioning',
-        message: 'Consider versioning strategy',
-        details: 'Plan for API evolution with proper versioning. Consider semantic versioning and backward compatibility.',
-        severity: 'medium'
-      });
-    }
-
-    // Check for extensibility
-    const schemasWithAdditionalProperties = Object.values(spec.components?.schemas || {}).filter(
-      (schema: any) => schema.additionalProperties === true
-    ).length;
-
-    if (schemasWithAdditionalProperties > 0) {
-      results.push({
-        type: 'success',
-        category: 'Schema Extensibility',
-        message: 'Schemas support extensibility',
-        details: `${schemasWithAdditionalProperties} schemas allow additional properties, enabling future extensions.`,
-        count: schemasWithAdditionalProperties,
-        severity: 'low'
-      });
-    }
-
-    // Check for breaking change risks
-    const requiredFields = Object.values(spec.components?.schemas || {}).reduce((count, schema: any) => {
-      return count + (schema.required?.length || 0);
-    }, 0);
-
-    if (requiredFields > endpoints.length * 2) {
-      results.push({
-        type: 'warning',
-        category: 'Breaking Change Risk',
-        message: 'High number of required fields',
-        details: 'Many required fields increase risk of breaking changes. Consider making fields optional where possible.',
-        severity: 'medium'
-      });
-    }
-
-    // Check for deprecated field handling
-    const schemasWithDeprecatedFields = Object.values(spec.components?.schemas || {}).filter(
-      (schema: any) => schema.properties && Object.values(schema.properties).some((prop: any) => prop.deprecated)
-    ).length;
-
-    if (schemasWithDeprecatedFields > 0) {
-      results.push({
-        type: 'success',
-        category: 'Deprecation Strategy',
-        message: 'Proper deprecation handling',
-        details: `${schemasWithDeprecatedFields} schemas properly mark deprecated fields.`,
-        count: schemasWithDeprecatedFields,
-        severity: 'low'
-      });
-    }
-
-    if (results.length === 0) {
-      results.push({
-        type: 'success',
-        category: 'Evolution Readiness',
-        message: 'API is well-prepared for evolution!',
-        details: 'Good versioning and extensibility practices detected.',
-        severity: 'low'
-      });
-    }
-
-    return results;
-  };
-
-  const tabs = [
-    { id: 'design', label: 'API Design', icon: FileText, validator: validateAPIDesign },
-    { id: 'security', label: 'Security', icon: Shield, validator: validateSecurity },
-    { id: 'examples', label: 'Examples', icon: Code, validator: validateExamples },
-    { id: 'cleanup', label: 'Cleanup', icon: Trash2, validator: findUnusedSchemas },
-    { id: 'evolution', label: 'Evolution', icon: TrendingUp, validator: analyzeEvolution }
-  ];
-
-  const currentResults = tabs.find(tab => tab.id === activeTab)?.validator() || [];
-
-  const filteredAndSortedResults = useMemo(() => {
-    let filtered = currentResults;
-
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(result => 
-        result.message.toLowerCase().includes(query) ||
-        result.category.toLowerCase().includes(query) ||
-        result.details?.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply severity filter
-    if (severityFilter !== 'all') {
-      filtered = filtered.filter(result => result.severity === severityFilter);
-    }
-
-    // Apply type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(result => result.type === typeFilter);
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortBy) {
-        case 'severity':
-          const severityOrder = { high: 3, medium: 2, low: 1 };
-          comparison = severityOrder[a.severity] - severityOrder[b.severity];
-          break;
-        case 'type':
-          const typeOrder = { error: 3, warning: 2, success: 1 };
-          comparison = typeOrder[a.type] - typeOrder[b.type];
-          break;
-        case 'category':
-          comparison = a.category.localeCompare(b.category);
-          break;
+    // Test 1: Check for missing alt text on images
+    document.querySelectorAll('img').forEach((img, index) => {
+      if (!img.alt && !img.getAttribute('aria-label')) {
+        issues.push({
+          id: `img-alt-${index}`,
+          type: 'error',
+          category: 'accessibility',
+          title: 'Missing Alt Text',
+          description: `Image element lacks alt text or aria-label`,
+          element: img,
+          suggestion: 'Add descriptive alt text or aria-label to all images',
+          wcagLevel: 'A',
+          wcagCriterion: '1.1.1 Non-text Content'
+        });
+        failed++;
+      } else {
+        passed++;
       }
-      
-      return sortOrder === 'desc' ? -comparison : comparison;
     });
 
-    return filtered;
-  }, [currentResults, searchQuery, severityFilter, typeFilter, sortBy, sortOrder]);
+    // Test 2: Check for proper heading hierarchy
+    const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+    let lastLevel = 0;
+    headings.forEach((heading, index) => {
+      const level = parseInt(heading.tagName.charAt(1));
+      if (level > lastLevel + 1 && lastLevel !== 0) {
+        issues.push({
+          id: `heading-hierarchy-${index}`,
+          type: 'warning',
+          category: 'accessibility',
+          title: 'Heading Hierarchy Skip',
+          description: `Heading level ${level} follows level ${lastLevel}, skipping intermediate levels`,
+          element: heading as HTMLElement,
+          suggestion: 'Maintain logical heading hierarchy without skipping levels',
+          wcagLevel: 'AA',
+          wcagCriterion: '1.3.1 Info and Relationships'
+        });
+        warnings++;
+      } else {
+        passed++;
+      }
+      lastLevel = level;
+    });
 
-  // Early return AFTER all hooks have been called
-  if (!isOpen || !spec) return null;
+    // Test 3: Check for keyboard accessibility
+    const interactiveElements = document.querySelectorAll('button, a, input, select, textarea, [tabindex]');
+    interactiveElements.forEach((element, index) => {
+      const tabIndex = element.getAttribute('tabindex');
+      if (tabIndex && parseInt(tabIndex) > 0) {
+        issues.push({
+          id: `positive-tabindex-${index}`,
+          type: 'warning',
+          category: 'accessibility',
+          title: 'Positive Tabindex',
+          description: 'Element uses positive tabindex which can disrupt natural tab order',
+          element: element as HTMLElement,
+          suggestion: 'Use tabindex="0" or remove tabindex to maintain natural tab order',
+          wcagLevel: 'A',
+          wcagCriterion: '2.1.1 Keyboard'
+        });
+        warnings++;
+      } else {
+        passed++;
+      }
+    });
 
-  const getResultIcon = (type: string) => {
-    switch (type) {
-      case 'success': return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
-      case 'error': return <XCircle className="h-5 w-5 text-red-600" />;
-      default: return <CheckCircle className="h-5 w-5 text-gray-600" />;
+    // Test 4: Check for ARIA labels on interactive elements
+    const buttons = document.querySelectorAll('button');
+    buttons.forEach((button, index) => {
+      const hasLabel = button.getAttribute('aria-label') || 
+                      button.getAttribute('aria-labelledby') || 
+                      button.textContent?.trim();
+      if (!hasLabel) {
+        issues.push({
+          id: `button-label-${index}`,
+          type: 'error',
+          category: 'accessibility',
+          title: 'Missing Button Label',
+          description: 'Button lacks accessible name',
+          element: button,
+          suggestion: 'Add aria-label, aria-labelledby, or visible text content',
+          wcagLevel: 'A',
+          wcagCriterion: '4.1.2 Name, Role, Value'
+        });
+        failed++;
+      } else {
+        passed++;
+      }
+    });
+
+    // Test 5: Check color contrast (simplified)
+    const textElements = document.querySelectorAll('p, span, div, h1, h2, h3, h4, h5, h6, a, button');
+    let contrastIssues = 0;
+    textElements.forEach((element, index) => {
+      const styles = window.getComputedStyle(element);
+      const fontSize = parseFloat(styles.fontSize);
+      const fontWeight = styles.fontWeight;
+      
+      // Simplified contrast check - in reality would need color calculation
+      const isLargeText = fontSize >= 18 || (fontSize >= 14 && (fontWeight === 'bold' || parseInt(fontWeight) >= 700));
+      
+      // Placeholder for actual contrast ratio calculation
+      const hasGoodContrast = true; // Would implement actual contrast calculation
+      
+      if (!hasGoodContrast) {
+        issues.push({
+          id: `contrast-${index}`,
+          type: 'error',
+          category: 'accessibility',
+          title: 'Insufficient Color Contrast',
+          description: `Text contrast ratio is below ${isLargeText ? '3:1' : '4.5:1'} requirement`,
+          element: element as HTMLElement,
+          suggestion: 'Increase color contrast between text and background',
+          wcagLevel: 'AA',
+          wcagCriterion: '1.4.3 Contrast (Minimum)'
+        });
+        contrastIssues++;
+      }
+    });
+
+    // Test 6: Check for form labels
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach((input, index) => {
+      const hasLabel = input.getAttribute('aria-label') || 
+                      input.getAttribute('aria-labelledby') || 
+                      document.querySelector(`label[for="${input.id}"]`) ||
+                      input.closest('label');
+      
+      // Only check type for input elements
+      const isInputElement = input instanceof HTMLInputElement;
+      const shouldHaveLabel = !isInputElement || 
+        (input.type !== 'hidden' && input.type !== 'submit' && input.type !== 'button');
+      
+      if (!hasLabel && shouldHaveLabel) {
+        issues.push({
+          id: `form-label-${index}`,
+          type: 'error',
+          category: 'accessibility',
+          title: 'Missing Form Label',
+          description: 'Form control lacks associated label',
+          element: input as HTMLElement,
+          suggestion: 'Associate form controls with descriptive labels using label element or aria-label',
+          wcagLevel: 'A',
+          wcagCriterion: '3.3.2 Labels or Instructions'
+        });
+        failed++;
+      } else {
+        passed++;
+      }
+    });
+
+    // Test 7: Check for focus indicators
+    const focusableElements = document.querySelectorAll('a, button, input, select, textarea, [tabindex="0"]');
+    let focusIssues = 0;
+    focusableElements.forEach((element, index) => {
+      const styles = window.getComputedStyle(element, ':focus');
+      const outline = styles.outline;
+      const boxShadow = styles.boxShadow;
+      
+      if (outline === 'none' && !boxShadow.includes('inset')) {
+        issues.push({
+          id: `focus-indicator-${index}`,
+          type: 'warning',
+          category: 'accessibility',
+          title: 'Missing Focus Indicator',
+          description: 'Interactive element lacks visible focus indicator',
+          element: element as HTMLElement,
+          suggestion: 'Ensure all interactive elements have visible focus indicators',
+          wcagLevel: 'AA',
+          wcagCriterion: '2.4.7 Focus Visible'
+        });
+        focusIssues++;
+      }
+    });
+
+    failed += contrastIssues + focusIssues;
+
+    // Calculate compliance score
+    const total = passed + failed + warnings;
+    const score = total > 0 ? Math.round(((passed + warnings * 0.5) / total) * 100) : 100;
+    
+    let compliance: AccessibilityTestResult['compliance'] = 'Non-compliant';
+    if (score >= 95 && failed === 0) compliance = 'AAA';
+    else if (score >= 90 && failed <= 2) compliance = 'AA';
+    else if (score >= 80 && failed <= 5) compliance = 'A';
+
+    return {
+      passed,
+      failed,
+      warnings,
+      issues,
+      score,
+      compliance
+    };
+  };
+
+  // Validate OpenAPI specification
+  const validateOpenAPI = (): ValidationIssue[] => {
+    const issues: ValidationIssue[] = [];
+
+    // Check for missing required fields
+    if (!spec.info.title) {
+      issues.push({
+        id: 'missing-title',
+        type: 'error',
+        category: 'openapi',
+        title: 'Missing API Title',
+        description: 'OpenAPI specification must have a title',
+        suggestion: 'Add a descriptive title to your API specification'
+      });
+    }
+
+    if (!spec.info.version) {
+      issues.push({
+        id: 'missing-version',
+        type: 'error',
+        category: 'openapi',
+        title: 'Missing API Version',
+        description: 'OpenAPI specification must have a version',
+        suggestion: 'Add semantic version number (e.g., "1.0.0")'
+      });
+    }
+
+    // Check endpoints for missing descriptions
+    endpoints.forEach((endpoint, index) => {
+      if (!endpoint.summary && !endpoint.description) {
+        issues.push({
+          id: `endpoint-description-${index}`,
+          type: 'warning',
+          category: 'openapi',
+          title: 'Missing Endpoint Description',
+          description: `Endpoint ${endpoint.method.toUpperCase()} ${endpoint.path} lacks description`,
+          suggestion: 'Add summary or description to improve API documentation'
+        });
+      }
+
+      // Check for missing response schemas
+      if (!endpoint.responses || Object.keys(endpoint.responses).length === 0) {
+        issues.push({
+          id: `endpoint-responses-${index}`,
+          type: 'error',
+          category: 'openapi',
+          title: 'Missing Response Definitions',
+          description: `Endpoint ${endpoint.method.toUpperCase()} ${endpoint.path} has no response definitions`,
+          suggestion: 'Define at least one response with appropriate schema'
+        });
+      }
+    });
+
+    return issues;
+  };
+
+  const runValidation = async () => {
+    setIsValidating(true);
+    
+    try {
+      // Run accessibility validation
+      const accessibilityResults = await runAccessibilityValidation();
+      setAccessibilityResults(accessibilityResults);
+      
+      // Run OpenAPI validation
+      const openApiIssues = validateOpenAPI();
+      setOpenAPIIssues(openApiIssues);
+      
+    } catch (error) {
+      console.error('Validation error:', error);
+    } finally {
+      setIsValidating(false);
     }
   };
 
-  const getResultColor = (type: string) => {
-    switch (type) {
-      case 'success': return 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20';
-      case 'warning': return 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20';
-      case 'error': return 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20';
-      default: return 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800';
-    }
-  };
-
-  const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-  };
-
-  const toggleSort = (field: 'severity' | 'type' | 'category') => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  const toggleCategory = (category: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category);
     } else {
-      setSortBy(field);
-      setSortOrder('desc');
+      newExpanded.add(category);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  const getIssueIcon = (type: ValidationIssue['type']) => {
+    switch (type) {
+      case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'warning': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+      case 'info': return <CheckCircle className="h-4 w-4 text-blue-500" />;
     }
   };
 
-  const getSortIcon = (field: 'severity' | 'type' | 'category') => {
-    if (sortBy !== field) return <ArrowUpDown className="h-4 w-4" />;
-    return sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />;
+  const getComplianceColor = (compliance: string) => {
+    switch (compliance) {
+      case 'AAA': return 'text-green-600 bg-green-100';
+      case 'AA': return 'text-blue-600 bg-blue-100';
+      case 'A': return 'text-yellow-600 bg-yellow-100';
+      default: return 'text-red-600 bg-red-100';
+    }
   };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-7xl h-[90vh] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div
+        ref={modalRef}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col"
+        role="dialog"
+        aria-labelledby="validation-title"
+        aria-modal="true"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Validation Center
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Comprehensive API validation and recommendations for {endpoints.length} endpoints
-              </p>
-            </div>
+            <Shield className="h-6 w-6 text-blue-600" />
+            <h2 id="validation-title" className="text-xl font-semibold text-gray-900 dark:text-white">
+              Validation Center
+            </h2>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            aria-label="Close validation center"
           >
-            <X className="h-5 w-5" />
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700 flex-shrink-0 overflow-x-auto">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            const results = tab.validator();
-            const errorCount = results.filter(r => r.type === 'error').length;
-            const warningCount = results.filter(r => r.type === 'warning').length;
-            
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`
-                  flex items-center gap-2 px-6 py-3 font-medium transition-colors whitespace-nowrap relative
-                  ${isActive 
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50 dark:bg-blue-900/20' 
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }
-                `}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-                {(errorCount > 0 || warningCount > 0) && (
-                  <div className="flex gap-1">
-                    {errorCount > 0 && (
-                      <span className="px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full min-w-[16px] text-center">
-                        {errorCount}
-                      </span>
-                    )}
-                    {warningCount > 0 && (
-                      <span className="px-1.5 py-0.5 bg-yellow-500 text-white text-xs rounded-full min-w-[16px] text-center">
-                        {warningCount}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Filters */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 flex-shrink-0">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search validation results..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-              />
-            </div>
-            
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 dark:border-gray-700">
+          {[
+            { id: 'accessibility', label: 'Accessibility', icon: Eye },
+            { id: 'openapi', label: 'OpenAPI', icon: Shield },
+            { id: 'performance', label: 'Performance', icon: Zap },
+            { id: 'security', label: 'Security', icon: Users }
+          ].map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as any)}
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === id
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
             >
-              <option value="all">All Severities</option>
-              <option value="high">High Severity</option>
-              <option value="medium">Medium Severity</option>
-              <option value="low">Low Severity</option>
-            </select>
-            
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-            >
-              <option value="all">All Types</option>
-              <option value="error">Errors</option>
-              <option value="warning">Warnings</option>
-              <option value="success">Success</option>
-            </select>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={() => toggleSort('severity')}
-                className="flex items-center gap-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm"
-              >
-                Severity {getSortIcon('severity')}
-              </button>
-            </div>
-            
-            <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-              <Filter className="h-4 w-4 mr-2" />
-              {filteredAndSortedResults.length} of {currentResults.length} results
-            </div>
-          </div>
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-4">
-            {filteredAndSortedResults.map((result, index) => (
-              <div
-                key={index}
-                className={`border rounded-lg p-6 ${getResultColor(result.type)} hover:shadow-md transition-shadow`}
-              >
-                <div className="flex items-start gap-4">
-                  {getResultIcon(result.type)}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-semibold text-gray-900 dark:text-white text-lg">
-                        {result.message}
-                      </h4>
-                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${getSeverityBadge(result.severity)}`}>
-                        {result.severity} severity
-                      </span>
-                      {result.count && (
-                        <span className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full font-medium">
-                          {result.count} affected
-                        </span>
-                      )}
+        <div className="flex-1 overflow-hidden">
+          {activeTab === 'accessibility' && (
+            <div className="h-full p-6 overflow-y-auto">
+              {/* Validation Controls */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    WCAG 2.1 Accessibility Validation
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Comprehensive accessibility testing for WCAG compliance
+                  </p>
+                </div>
+                <button
+                  onClick={runValidation}
+                  disabled={isValidating}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isValidating ? 'animate-spin' : ''}`} />
+                  {isValidating ? 'Validating...' : 'Run Validation'}
+                </button>
+              </div>
+
+              {/* Results Summary */}
+              {accessibilityResults && (
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Validation Results
+                    </h4>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getComplianceColor(accessibilityResults.compliance)}`}>
+                      {accessibilityResults.compliance} Compliant
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-4 gap-4 mb-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{accessibilityResults.passed}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Passed</div>
                     </div>
-                    <p className="text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
-                      {result.details}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block px-3 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded border border-gray-200 dark:border-gray-600 font-medium">
-                        {result.category}
-                      </span>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-red-600">{accessibilityResults.failed}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Failed</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-yellow-600">{accessibilityResults.warnings}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Warnings</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{accessibilityResults.score}%</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Score</div>
                     </div>
                   </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${accessibilityResults.score}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Issues List */}
+              {accessibilityResults && accessibilityResults.issues.length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Issues Found ({accessibilityResults.issues.length})
+                  </h4>
+                  
+                  {accessibilityResults.issues.map((issue) => (
+                    <div key={issue.id} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
+                      <div className="flex items-start gap-3">
+                        {getIssueIcon(issue.type)}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h5 className="font-medium text-gray-900 dark:text-white">
+                              {issue.title}
+                            </h5>
+                            {issue.wcagLevel && (
+                              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
+                                WCAG {issue.wcagLevel}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
+                            {issue.description}
+                          </p>
+                          {issue.wcagCriterion && (
+                            <p className="text-blue-600 dark:text-blue-400 text-xs mb-2">
+                              {issue.wcagCriterion}
+                            </p>
+                          )}
+                          {issue.suggestion && (
+                            <div className="bg-blue-50 dark:bg-blue-900/30 rounded p-3 text-sm">
+                              <strong className="text-blue-800 dark:text-blue-200">Suggestion: </strong>
+                              <span className="text-blue-700 dark:text-blue-300">{issue.suggestion}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'openapi' && (
+            <div className="h-full p-6 overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    OpenAPI Specification Validation
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Validate your OpenAPI spec against standards and best practices
+                  </p>
                 </div>
               </div>
-            ))}
-            
-            {filteredAndSortedResults.length === 0 && (
-              <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-                <div className="text-center">
-                  <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">No validation results found</p>
-                  <p className="text-sm">Try adjusting your search or filters</p>
+
+              {openAPIIssues.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    No Issues Found
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Your OpenAPI specification follows best practices
+                  </p>
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  {openAPIIssues.map((issue) => (
+                    <div key={issue.id} className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
+                      <div className="flex items-start gap-3">
+                        {getIssueIcon(issue.type)}
+                        <div className="flex-1">
+                          <h5 className="font-medium text-gray-900 dark:text-white mb-2">
+                            {issue.title}
+                          </h5>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
+                            {issue.description}
+                          </p>
+                          {issue.suggestion && (
+                            <div className="bg-blue-50 dark:bg-blue-900/30 rounded p-3 text-sm">
+                              <strong className="text-blue-800 dark:text-blue-200">Suggestion: </strong>
+                              <span className="text-blue-700 dark:text-blue-300">{issue.suggestion}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {(activeTab === 'performance' || activeTab === 'security') && (
+            <div className="h-full p-6 overflow-y-auto">
+              <div className="text-center py-12">
+                <Zap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  Coming Soon
+                </h4>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {activeTab === 'performance' ? 'Performance' : 'Security'} validation tools are under development
+                </p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

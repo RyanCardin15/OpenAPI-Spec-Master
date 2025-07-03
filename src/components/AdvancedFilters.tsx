@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Filter, 
   X, 
@@ -16,6 +16,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { FilterState } from '../types/openapi';
+import { BottomSheet } from './BottomSheet';
 
 interface AdvancedFiltersProps {
   isOpen: boolean;
@@ -43,6 +44,39 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['basic', 'methods', 'tags'])
   );
+  const [isMobile, setIsMobile] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Check if mobile on mount and window resize
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  // Focus management for accessibility
+  useEffect(() => {
+    if (isOpen && closeButtonRef.current && !isMobile) {
+      closeButtonRef.current.focus();
+    }
+  }, [isOpen, isMobile]);
+
+  // Handle escape key
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
@@ -146,20 +180,28 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       <div className="border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => toggleSection(id)}
-          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-inset touch-target"
+          aria-expanded={isExpanded}
+          aria-controls={`filter-section-${id}`}
+          aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${title} filter section`}
         >
           <div className="flex items-center gap-3">
-            <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
             <span className="font-medium text-gray-900 dark:text-white">{title}</span>
           </div>
           {isExpanded ? (
-            <ChevronUp className="h-4 w-4 text-gray-500" />
+            <ChevronUp className="h-4 w-4 text-gray-500" aria-hidden="true" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-gray-500" />
+            <ChevronDown className="h-4 w-4 text-gray-500" aria-hidden="true" />
           )}
         </button>
         {isExpanded && (
-          <div className="px-4 pb-4">
+          <div 
+            id={`filter-section-${id}`}
+            className="px-4 pb-4"
+            role="region"
+            aria-labelledby={`filter-section-${id}-header`}
+          >
             {children}
           </div>
         )}
@@ -172,86 +214,63 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
     (filters.deprecated !== null ? 1 : 0) + (filters.search ? 1 : 0) + (filters.pathPattern ? 1 : 0) +
     (filters.hasParameters !== null ? 1 : 0) + (filters.hasRequestBody !== null ? 1 : 0);
 
-  return (
-    <>
-      {/* Backdrop */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-      
-      {/* Sidebar */}
-      <div className={`
-        fixed lg:sticky top-0 left-0 h-screen w-96 bg-white dark:bg-gray-800 
-        border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        flex flex-col
-      `}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <Filter className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Advanced Filters</h2>
+  // Render filter summary component
+  const FilterSummary = () => (
+    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-blue-700 dark:text-blue-300">
+          Showing {filteredCount} of {endpointCount} endpoints
+        </span>
+        {activeFiltersCount > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-blue-600 dark:text-blue-400 font-medium">
+              {activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} active
+            </span>
+            <button
+              onClick={clearAllFilters}
+              className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800 rounded transition-colors touch-target-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+              aria-label="Clear all active filters"
+            >
+              <RotateCcw className="h-3 w-3" aria-hidden="true" />
+              Clear
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        )}
+      </div>
+    </div>
+  );
 
-        {/* Results Counter */}
-        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing <span className="font-semibold text-blue-600">{filteredCount}</span> of{' '}
-            <span className="font-semibold">{endpointCount}</span> endpoints
-          </div>
-          {activeFiltersCount > 0 && (
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''} active
-              </span>
-              <button
-                onClick={clearAllFilters}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
-              >
-                <RotateCcw className="h-3 w-3" />
-                Clear all
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Basic Search */}
-          <FilterSection id="basic" title="Search & Text" icon={Search}>
+  // Render filter content that will be shared between mobile and desktop
+  const FilterContent = () => (
+    <div className="space-y-0">
+      {/* Basic Search & Filters */}
+          <FilterSection id="basic" title="Basic Search" icon={Search}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Search endpoints
+                <label htmlFor="search-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Search in paths and descriptions
                 </label>
                 <input
+                  id="search-input"
                   type="text"
+                  placeholder="e.g., /users, authentication..."
                   value={filters.search}
                   onChange={(e) => onFilterChange({ ...filters, search: e.target.value })}
-                  placeholder="Search paths, descriptions, summaries..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+              
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Path pattern
+                <label htmlFor="path-pattern-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Path Pattern (regex)
                 </label>
                 <input
+                  id="path-pattern-input"
                   type="text"
+                  placeholder="e.g., ^/api/v[0-9]+/"
                   value={filters.pathPattern}
                   onChange={(e) => onFilterChange({ ...filters, pathPattern: e.target.value })}
-                  placeholder="/api/v1/users, /pets/{id}, etc."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -259,21 +278,31 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
           {/* HTTP Methods */}
           <FilterSection id="methods" title="HTTP Methods" icon={Code}>
-            <div className="grid grid-cols-2 gap-2">
-              {availableMethods.map(method => (
-                <label key={method} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.methods.includes(method)}
-                    onChange={() => handleMethodToggle(method)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                  />
-                  <span className={`px-2 py-1 rounded text-xs font-medium border ${getMethodColor(method)}`}>
-                    {method}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <fieldset>
+              <legend className="sr-only">Select HTTP methods to filter by</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {availableMethods.map(method => (
+                  <label
+                    key={method}
+                    className={`
+                      flex items-center gap-2 p-2 border rounded-lg cursor-pointer transition-all
+                      ${filters.methods.includes(method) 
+                        ? getMethodColor(method) 
+                        : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }
+                    `}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={filters.methods.includes(method)}
+                      onChange={() => handleMethodToggle(method)}
+                      className="sr-only"
+                    />
+                    <span className="text-sm font-medium">{method}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           </FilterSection>
 
           {/* Tags */}
@@ -499,8 +528,71 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               </div>
             </div>
           </FilterSection>
+    </div>
+  );
+
+  // Conditional rendering based on screen size
+  if (isMobile) {
+    return (
+      <BottomSheet
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Advanced Filters"
+        height="full"
+      >
+        <FilterSummary />
+        <FilterContent />
+      </BottomSheet>
+    );
+  }
+
+  // Desktop sidebar version
+  return (
+    <>
+      {/* Backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside 
+        ref={sidebarRef}
+        className={`
+          fixed lg:sticky top-0 left-0 h-screen w-96 bg-white dark:bg-gray-800 
+          border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          flex flex-col
+        `}
+        aria-label="Advanced filters"
+        role="complementary"
+      >
+        {/* Header */}
+        <header className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <Filter className="h-5 w-5 text-blue-600" aria-hidden="true" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Advanced Filters</h2>
+          </div>
+          <button
+            ref={closeButtonRef}
+            onClick={onClose}
+            className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors touch-target focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label="Close filter panel"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </header>
+
+        <FilterSummary />
+
+        {/* Scrollable Filters Content */}
+        <div className="flex-1 overflow-y-auto" role="main">
+          <FilterContent />
         </div>
-      </div>
+      </aside>
     </>
   );
 };
