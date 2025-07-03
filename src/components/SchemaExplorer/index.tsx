@@ -76,6 +76,18 @@ import { DocsTab } from './tabs/DocsTab';
 import { RelationshipsTab } from './tabs/RelationshipsTab';
 import { TestingTab } from './tabs/TestingTab';
 
+interface FilterState {
+  searchQuery: string;
+  propertySearch: string;
+  semanticSearch: string;
+  type: string;
+  complexity: string;
+  propertyType: string[];
+  required: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+}
+
 export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, onClose }) => {
   // Core state
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -83,12 +95,13 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   
   // Filter and search state
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<FilterState>({
     searchQuery: '',
     propertySearch: '',
     semanticSearch: '',
     type: 'all',
     complexity: 'all',
+    propertyType: [],
     required: 'all',
     sortBy: 'name',
     sortOrder: 'asc'
@@ -234,6 +247,13 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
       
       const resolvedSchema = resolveSchemaReference(schema, schemas);
       
+      if (
+        filters.propertyType.length > 0 &&
+        !filters.propertyType.includes(resolvedSchema.type)
+      ) {
+        return;
+      }
+      
       if (resolvedSchema.properties) {
         Object.entries(resolvedSchema.properties).forEach(([propName, propSchema]: [string, any]) => {
           const currentPath = path ? `${path}.${propName}` : propName;
@@ -268,7 +288,7 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     });
     
     return results;
-  }, [schemas]);
+  }, [schemas, filters.propertyType]);
 
   // This is a complex memo that filters and sorts schemas based on multiple criteria
   const filteredAndSortedSchemas = useMemo(() => {
@@ -850,6 +870,9 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     return sample;
   }, [schemas]);
 
+  const expandAll = () => setExpandedSchemas(new Set(schemaNames));
+  const collapseAll = () => setExpandedSchemas(new Set());
+
   if (!isOpen || !spec) return null;
 
   return (
@@ -913,14 +936,16 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               schemas={schemas}
               schemaMetrics={schemaMetrics}
               searchQuery={filters.searchQuery}
-              setSearchQuery={(query) => setFilters({ ...filters, searchQuery: query })}
+              setSearchQuery={(query) => setFilters(prev => ({...prev, searchQuery: query}))}
               isAiSearchEnabled={isAiSearchEnabled}
               setIsAiSearchEnabled={setIsAiSearchEnabled}
               aiSearchSuggestions={aiSearchSuggestions}
               enhancedSearchProperties={enhancedSearchProperties}
               searchProperties={searchProperties}
               complexityFilter={filters.complexity}
-              setComplexityFilter={(complexity) => setFilters({ ...filters, complexity })}
+              setComplexityFilter={(value) => setFilters(prev => ({...prev, complexity: value}))}
+              propertyTypeFilter={filters.propertyType}
+              setPropertyTypeFilter={(value) => setFilters(prev => ({...prev, propertyType: value}))}
               showAdvancedFilters={showAdvancedFilters}
               setShowAdvancedFilters={setShowAdvancedFilters}
               AdvancedFilterControls={AdvancedFilterControls}
@@ -935,6 +960,8 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               setEditingSchema={setEditingSchema}
               generateAIInsights={generateAIInsights}
               schemaNames={schemaNames}
+              expandAll={expandAll}
+              collapseAll={collapseAll}
             />
           )}
 
