@@ -11,6 +11,7 @@ import {
   BarChart3,
   Cpu
 } from 'lucide-react';
+import { ThemeSelector } from '../theme';
 
 interface HeaderProps {
   title: string;
@@ -90,6 +91,9 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               </>
             )}
+
+            {/* Theme Selector */}
+            <ThemeSelector variant="compact" className="hidden sm:block" />
 
             <button
               onClick={onMCPClick}
@@ -186,6 +190,11 @@ export const Header: React.FC<HeaderProps> = ({
                 <Cpu className="h-5 w-5" />
                 MCP Integration
               </button>
+
+              {/* Mobile Theme Selector */}
+              <div className="px-3 py-2">
+                <ThemeSelector variant="dropdown" showLabels={true} />
+              </div>
 
               <button className="flex items-center gap-3 px-3 py-2 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <Settings className="h-5 w-5" />
