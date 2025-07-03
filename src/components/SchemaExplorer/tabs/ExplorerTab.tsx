@@ -64,7 +64,7 @@ export const ExplorerTab: React.FC<ExplorerTabProps> = ({
   return (
     <div className="h-full flex flex-col md:flex-row">
       {/* Sidebar */}
-      <div className={`w-full md:w-80 border-r-0 md:border-r border-gray-200 dark:border-gray-700 flex-col bg-white dark:bg-gray-800 ${selectedSchema ? 'hidden md:flex' : 'flex'}`}>
+      <div className={`w-full md:w-80 border-r-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col bg-white dark:bg-gray-800 ${selectedSchema ? 'hidden md:flex' : 'flex'}`}>
         {/* Search and Filters */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-4">
           {/* Enhanced Search with AI */}
@@ -324,14 +324,32 @@ export const ExplorerTab: React.FC<ExplorerTabProps> = ({
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                       <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700">
-                          {/* table header */}
+                          <tr>
+                            <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                            <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                            <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Required</th>
+                            <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+                          </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
                           {Object.entries(schema.properties || {}).map(([propName, propSchema]: [string, any]) => {
                             const isRequired = schema.required?.includes(propName);
                             return (
                               <tr key={propName}>
-                                {/* table row content */}
+                                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{propName}</td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{propSchema.type}</td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                  {isRequired ? (
+                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                      Yes
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                      No
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{propSchema.description || '-'}</td>
                               </tr>
                             );
                           })}

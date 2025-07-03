@@ -149,67 +149,67 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
   }, [schemaNames]);
 
   const calculateMetrics = useCallback((schemaName: string, schema: any): SchemaMetrics => {
-    const resolvedSchema = resolveSchemaReference(schema, schemas);
-    
-    const calculateComplexity = (obj: any, depth = 0): { complexity: number; maxDepth: number; propCount: number } => {
-      if (!obj || typeof obj !== 'object' || depth > 10) return { complexity: 0, maxDepth: depth, propCount: 0 };
+      const resolvedSchema = resolveSchemaReference(schema, schemas);
       
-      let complexity = 0;
-      let maxDepth = depth;
-      let propCount = 0;
-      
-      if (obj.properties) {
-        propCount = Object.keys(obj.properties).length;
-        complexity += propCount;
+      const calculateComplexity = (obj: any, depth = 0): { complexity: number; maxDepth: number; propCount: number } => {
+        if (!obj || typeof obj !== 'object' || depth > 10) return { complexity: 0, maxDepth: depth, propCount: 0 };
         
-        Object.values(obj.properties).forEach((prop: any) => {
-          const resolvedProp = resolveSchemaReference(prop, schemas);
-          const result = calculateComplexity(resolvedProp, depth + 1);
+        let complexity = 0;
+        let maxDepth = depth;
+        let propCount = 0;
+        
+        if (obj.properties) {
+          propCount = Object.keys(obj.properties).length;
+          complexity += propCount;
+          
+          Object.values(obj.properties).forEach((prop: any) => {
+            const resolvedProp = resolveSchemaReference(prop, schemas);
+            const result = calculateComplexity(resolvedProp, depth + 1);
+            complexity += result.complexity;
+            maxDepth = Math.max(maxDepth, result.maxDepth);
+            propCount += result.propCount;
+          });
+        }
+        
+        if (obj.items) {
+          const resolvedItems = resolveSchemaReference(obj.items, schemas);
+          const result = calculateComplexity(resolvedItems, depth + 1);
           complexity += result.complexity;
           maxDepth = Math.max(maxDepth, result.maxDepth);
           propCount += result.propCount;
-        });
-      }
+        }
+        
+        if (obj.allOf || obj.oneOf || obj.anyOf) {
+          complexity += 5; // Polymorphism adds complexity
+        }
+        
+        return { complexity, maxDepth, propCount };
+      };
       
-      if (obj.items) {
-        const resolvedItems = resolveSchemaReference(obj.items, schemas);
-        const result = calculateComplexity(resolvedItems, depth + 1);
-        complexity += result.complexity;
-        maxDepth = Math.max(maxDepth, result.maxDepth);
-        propCount += result.propCount;
-      }
+      const { complexity, maxDepth, propCount } = calculateComplexity(resolvedSchema);
+      const requiredCount = resolvedSchema.required?.length || 0;
+      const dependencies = findSchemaDependencies.get(schemaName)?.length || 0;
       
-      if (obj.allOf || obj.oneOf || obj.anyOf) {
-        complexity += 5; // Polymorphism adds complexity
-      }
+      // Detect circular references
+      const visited = new Set<string>();
+      const checkCircular = (currentSchema: string): boolean => {
+        if (visited.has(currentSchema)) return true;
+        visited.add(currentSchema);
+        
+        const deps = findSchemaDependencies.get(currentSchema) || [];
+        return deps.some(dep => checkCircular(dep));
+      };
       
-      return { complexity, maxDepth, propCount };
-    };
-    
-    const { complexity, maxDepth, propCount } = calculateComplexity(resolvedSchema);
-    const requiredCount = resolvedSchema.required?.length || 0;
-    const dependencies = findSchemaDependencies.get(schemaName)?.length || 0;
-    
-    // Detect circular references
-    const visited = new Set<string>();
-    const checkCircular = (currentSchema: string): boolean => {
-      if (visited.has(currentSchema)) return true;
-      visited.add(currentSchema);
-      
-      const deps = findSchemaDependencies.get(currentSchema) || [];
-      return deps.some(dep => checkCircular(dep));
-    };
-    
-    return {
-      complexity,
-      depth: maxDepth,
-      propertyCount: propCount,
-      requiredCount,
-      dependencyCount: dependencies,
-      circularRefs: checkCircular(schemaName),
-      usage: Math.floor(Math.random() * 100), // Mock usage data
-      lastModified: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-    };
+      return {
+        complexity,
+        depth: maxDepth,
+        propertyCount: propCount,
+        requiredCount,
+        dependencyCount: dependencies,
+        circularRefs: checkCircular(schemaName),
+        usage: Math.floor(Math.random() * 100), // Mock usage data
+        lastModified: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
+      };
   }, [schemas, findSchemaDependencies]);
 
   // Enhanced schema analysis with metrics - now uses findSchemaDependencies
@@ -273,7 +273,7 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
   // This is a complex memo that filters and sorts schemas based on multiple criteria
   const filteredAndSortedSchemas = useMemo(() => {
     let filtered = [...schemaNames];
-    
+
     // Apply search filters
     if (filters.searchQuery) {
       const query = filters.searchQuery.toLowerCase();
@@ -465,7 +465,7 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
   }, [searchProperties]);
 
   // Utility functions
-  
+
   const generateMockData = useCallback((schema: any): any => {
     if (!schema || typeof schema !== 'object') return null;
 
@@ -902,8 +902,8 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               schemaMetrics={schemaMetrics}
               onSelectSchema={(schemaName) => {
                 setSelectedSchema(schemaName);
-                setActiveTab('explorer');
-              }}
+                                setActiveTab('explorer');
+                              }}
             />
           )}
 
@@ -956,8 +956,8 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               summary: validationSummary,
               issues: allIssues
             };
-
-            return (
+                      
+                      return (
               <ValidationTab
                 validationResults={validationResults}
                 onSelectSchema={(schemaName) => {
@@ -965,9 +965,9 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
                   setActiveTab('explorer');
                 }}
               />
-            );
-          })()}
-
+                        );
+                      })()}
+                      
           {activeTab === 'analytics' && (() => {
             const analyticsData = getAnalyticsData();
             const validationSummary = getValidationSummary();
@@ -987,7 +987,7 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               }
             }
             return <AnalyticsTab analytics={analytics} />;
-          })()}
+                  })()}
 
           {activeTab === 'editor' && (
             <EditorTab
@@ -995,9 +995,9 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               editedCode={editedCode}
               setEditedCode={setEditedCode}
               onCancel={() => {
-                setEditingSchema(null);
-                setEditedCode('');
-              }}
+                          setEditingSchema(null);
+                          setEditedCode('');
+                        }}
               onSave={handleSaveChanges}
             />
           )}
@@ -1017,8 +1017,8 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
           )}
 
           {activeTab === 'testing' && <TestingTab />}
-        </div>
-      </div>
+                  </div>
+                    </div>
     </div>
   );
 };
