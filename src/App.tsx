@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { FileUpload } from './components/FileUpload';
 import { Header } from './components/Header';
 import { AdvancedFilters } from './components/AdvancedFilters';
@@ -1004,6 +1005,9 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Vercel Analytics */}
+      <Analytics />
     </div>
   );
 }
