@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Download, FileText, Image, Code, Filter } from 'lucide-react';
+import { X, Download, FileText, Image, Code, Filter, Copy } from 'lucide-react';
 import { EndpointData, FilterState } from '../types/openapi';
+import { generateTypeScript } from './SchemaExplorer/utils/generateTypeScript';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -8,6 +9,8 @@ interface ExportModalProps {
   endpoints: EndpointData[];
   filters: FilterState;
   onExport: (format: 'json' | 'pdf' | 'csv' | 'markdown', options: ExportOptions) => void;
+  schemaName: string;
+  schema: any;
 }
 
 interface ExportOptions {
@@ -23,7 +26,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   onClose,
   endpoints,
   filters,
-  onExport
+  onExport,
+  schemaName,
+  schema
 }) => {
   const [selectedFormat, setSelectedFormat] = useState<'json' | 'pdf' | 'csv' | 'markdown'>('json');
   const [options, setOptions] = useState<ExportOptions>({
@@ -33,6 +38,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     includeCodeExamples: true,
     format: 'detailed'
   });
+  const [language, setLanguage] = useState('typescript');
+  const [generatedCode, setGeneratedCode] = useState('');
 
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -114,6 +121,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       setSelectedFormat(format as any);
     }
   }, []);
+
+  React.useEffect(() => {
+    if (language === 'typescript') {
+      setGeneratedCode(generateTypeScript(schemaName, schema));
+    } else {
+      setGeneratedCode(`// ${language} code generation not implemented yet`);
+    }
+  }, [language, schemaName, schema]);
 
   if (!isOpen) return null;
 
@@ -363,6 +378,29 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 </label>
               </div>
             </fieldset>
+          </fieldset>
+
+          {/* Schema Code */}
+          <fieldset className="mb-6">
+            <legend className="text-base sm:text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Schema Code
+            </legend>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-4"
+              >
+                <option value="typescript">TypeScript</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+              </select>
+            </div>
+            <div className="bg-gray-900 text-white p-4 rounded-lg font-mono text-sm overflow-x-auto">
+              <pre>
+                <code>{generatedCode}</code>
+              </pre>
+            </div>
           </fieldset>
         </div>
 

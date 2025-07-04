@@ -68,27 +68,38 @@ import { useSchemaActions } from './hooks/useSchemaActions';
 import { Header } from './components/Header';
 import { OverviewTab } from './tabs/OverviewTab';
 import { ExplorerTab } from './tabs/ExplorerTab';
-import { ComparisonTab } from './tabs/ComparisonTab';
 import { ValidationTab } from './tabs/ValidationTab';
 import { AnalyticsTab } from './tabs/AnalyticsTab';
-import { EditorTab } from './tabs/EditorTab';
 import { DocsTab } from './tabs/DocsTab';
 import { RelationshipsTab } from './tabs/RelationshipsTab';
 import { TestingTab } from './tabs/TestingTab';
 
-export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, onClose }) => {
+interface FilterState {
+  searchQuery: string;
+  propertySearch: string;
+  semanticSearch: string;
+  type: string;
+  complexity: string;
+  propertyType: string[];
+  required: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+}
+
+export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, allSpecs = [], isOpen, onClose }) => {
   // Core state
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [selectedSchema, setSelectedSchema] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   
   // Filter and search state
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<FilterState>({
     searchQuery: '',
     propertySearch: '',
     semanticSearch: '',
     type: 'all',
     complexity: 'all',
+    propertyType: [],
     required: 'all',
     sortBy: 'name',
     sortOrder: 'asc'
@@ -105,6 +116,8 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
   const [editedCode, setEditedCode] = useState('');
   const [localSpec, setLocalSpec] = useState<OpenAPISpec | null>(spec);
 
+  const showCompareTab = allSpecs && allSpecs.length > 1;
+
   const { schemas, schemaNames, findSchemaDependencies } = useSchemaData(localSpec);
   const {
     copiedText,
@@ -113,6 +126,11 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     toggleSchemaSelection,
     setSelectedSchemas,
   } = useSchemaActions();
+
+  const handleSelectSchema = useCallback((schemaName: string) => {
+    setSelectedSchema(schemaName);
+    setActiveTab('explorer');
+  }, []);
 
   const containerClasses = `fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-0 md:p-4 ${isMaximized ? 'p-0' : ''}`;
   const modalClasses = `bg-white dark:bg-gray-800 md:rounded-xl shadow-2xl flex flex-col ${
@@ -223,7 +241,7 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     return metrics;
   }, [schemas, calculateMetrics]);
 
-  const { validateSingleSchema, getValidationSummary } = useSchemaValidation(schemas, schemaMetrics);
+  const { validateSingleSchema, getValidationSummary } = useSchemaValidation(localSpec, schemas, schemaMetrics);
 
   // Enhanced property search with semantic capabilities
   const searchProperties = useMemo((): PropertyResult[] => {
@@ -233,6 +251,13 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
       if (!schema || typeof schema !== 'object') return;
       
       const resolvedSchema = resolveSchemaReference(schema, schemas);
+      
+      if (
+        filters.propertyType.length > 0 &&
+        !filters.propertyType.includes(resolvedSchema.type)
+      ) {
+        return;
+      }
       
       if (resolvedSchema.properties) {
         Object.entries(resolvedSchema.properties).forEach(([propName, propSchema]: [string, any]) => {
@@ -268,7 +293,7 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     });
     
     return results;
-  }, [schemas]);
+  }, [schemas, filters.propertyType]);
 
   // This is a complex memo that filters and sorts schemas based on multiple criteria
   const filteredAndSortedSchemas = useMemo(() => {
@@ -511,11 +536,9 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Database, description: 'Schema summary and quick stats' },
     { id: 'explorer', label: 'Explorer', icon: Search, description: 'Browse and search schemas' },
-    { id: 'comparison', label: 'Compare', icon: GitCompare, description: 'Compare multiple schemas' },
     { id: 'validation', label: 'Validation', icon: FileCheck, description: 'Validate schemas and find issues' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, description: 'Schema metrics and insights' },
     { id: 'relationships', label: 'Relations', icon: Network, description: 'Dependency visualization' },
-    { id: 'editor', label: 'Editor', icon: Edit3, description: 'Edit schemas inline' },
     { id: 'docs', label: 'Docs', icon: BookOpen, description: 'Generate documentation' },
     { id: 'testing', label: 'Testing', icon: Zap, description: 'Test and mock data generation' }
   ];
@@ -850,6 +873,9 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
     return sample;
   }, [schemas]);
 
+  const expandAll = () => setExpandedSchemas(new Set(schemaNames));
+  const collapseAll = () => setExpandedSchemas(new Set());
+
   if (!isOpen || !spec) return null;
 
   return (
@@ -913,14 +939,16 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               schemas={schemas}
               schemaMetrics={schemaMetrics}
               searchQuery={filters.searchQuery}
-              setSearchQuery={(query) => setFilters({ ...filters, searchQuery: query })}
+              setSearchQuery={(query) => setFilters(prev => ({...prev, searchQuery: query}))}
               isAiSearchEnabled={isAiSearchEnabled}
               setIsAiSearchEnabled={setIsAiSearchEnabled}
               aiSearchSuggestions={aiSearchSuggestions}
               enhancedSearchProperties={enhancedSearchProperties}
               searchProperties={searchProperties}
               complexityFilter={filters.complexity}
-              setComplexityFilter={(complexity) => setFilters({ ...filters, complexity })}
+              setComplexityFilter={(value) => setFilters(prev => ({...prev, complexity: value}))}
+              propertyTypeFilter={filters.propertyType}
+              setPropertyTypeFilter={(value) => setFilters(prev => ({...prev, propertyType: value}))}
               showAdvancedFilters={showAdvancedFilters}
               setShowAdvancedFilters={setShowAdvancedFilters}
               AdvancedFilterControls={AdvancedFilterControls}
@@ -935,39 +963,28 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
               setEditingSchema={setEditingSchema}
               generateAIInsights={generateAIInsights}
               schemaNames={schemaNames}
-            />
-          )}
-
-          {activeTab === 'comparison' && (
-            <ComparisonTab
-              selectedSchemas={selectedSchemas}
-              schemas={schemas}
-              onRemoveSchema={toggleSchemaSelection}
-              onAddSchema={() => setActiveTab('explorer')}
+              expandAll={expandAll}
+              collapseAll={collapseAll}
             />
           )}
 
           {activeTab === 'validation' && (() => {
-            const validationSummary = getValidationSummary();
             const allIssues = Object.entries(schemas).flatMap(([name, schema]) => 
               validateSingleSchema(name, schema)
             );
             const validationResults = {
-              summary: validationSummary,
-              issues: allIssues
+              summary: getValidationSummary(),
+              issues: allIssues,
             };
-                      
-                      return (
-              <ValidationTab
+            return (
+              <ValidationTab 
                 validationResults={validationResults}
-                onSelectSchema={(schemaName) => {
-                  setSelectedSchema(schemaName);
-                  setActiveTab('explorer');
-                }}
+                onSelectSchema={handleSelectSchema}
+                spec={localSpec}
               />
-                        );
-                      })()}
-                      
+            );
+          })()}
+          
           {activeTab === 'analytics' && (() => {
             const analyticsData = getAnalyticsData();
             const validationSummary = getValidationSummary();
@@ -988,19 +1005,6 @@ export const SchemaExplorer: React.FC<SchemaExplorerProps> = ({ spec, isOpen, on
             }
             return <AnalyticsTab analytics={analytics} />;
                   })()}
-
-          {activeTab === 'editor' && (
-            <EditorTab
-              editingSchema={editingSchema}
-              editedCode={editedCode}
-              setEditedCode={setEditedCode}
-              onCancel={() => {
-                          setEditingSchema(null);
-                          setEditedCode('');
-                        }}
-              onSave={handleSaveChanges}
-            />
-          )}
 
           {activeTab === 'docs' && (
             <DocsTab

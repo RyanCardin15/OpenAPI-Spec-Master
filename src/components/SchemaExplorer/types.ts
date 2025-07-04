@@ -2,6 +2,7 @@ import { OpenAPISpec } from '../../types/openapi';
 
 export interface SchemaExplorerProps {
   spec: OpenAPISpec | null;
+  allSpecs?: OpenAPISpec[];
   isOpen: boolean;
   onClose: () => void;
 }
@@ -37,7 +38,8 @@ export interface ValidationIssue {
   message: string;
   path: string;
   suggestion?: string;
+  tags?: string[];
 }
 
 export type TabType = 'overview' | 'explorer' | 'comparison' | 'validation' | 'analytics' | 'editor' | 'docs' | 'relationships' | 'testing';
-export type ViewMode = 'card' | 'table' | 'tree' | 'graph';
+export type ViewMode = 'card' | 'list' | 'tree';
